@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">ComposeShip</string>
+    <string name="macos_release_title">Інструмент випуску для macOS App Store</string>
+    <string name="step_1_title">Крок 1: Виберіть кореневу папку проекту Compose Multiplatform</string>
+    <string name="project_root_label">Шлях до кореня проекту</string>
+    <string name="browse">Огляд</string>
+    <string name="next">Далі</string>
+    <string name="step_2_title">Крок 2: Виберіть завдання пакування</string>
+    <string name="step_3_title">Крок 3: Виберіть сертифікати підпису</string>
+    <string name="app_identity_label">Сертифікат програми (для .app пакету)</string>
+    <string name="no_app_identities">Сертифікати програми не знайдені.</string>
+    <string name="installer_identity_label">Сертифікат інсталятора (для .pkg пакету)</string>
+    <string name="no_installer_identities">Сертифікати інсталятора не знайдені.</string>
+    <string name="step_4_title">Крок 4: Дані доступу App Store Connect</string>
+    <string name="issuer_id_label">ID видавця (Issuer ID)</string>
+    <string name="key_id_label">ID ключа (Key ID)</string>
+    <string name="api_key_path_label">Шлях до API ключа (.p8)</string>
+    <string name="step_5_title">Крок 5: Процес випуску</string>
+    <string name="start_release">Почати збірку та випуск</string>
+    <string name="released_successfully">Випущено успішно</string>
+    <string name="logs">Логи</string>
+    <string name="show_details">Показати деталі</string>
+    <string name="hide_details">Приховати деталі</string>
+
+    <string name="onboarding_title">Ласкаво просимо до ComposeShip</string>
+    <string name="onboarding_description">Ваш набір інструментів для розробки на Compose Multiplatform. Оптимізація робочого процесу для Android, iOS, Web та Desktop.</string>
+    <string name="onboarding_feature_macos">🚀 Інструмент випуску для macOS: Проста публікація в App Store.</string>
+    <string name="onboarding_feature_more">🛠 Більше інструментів незабаром: зміна розміру зображень, видалення фону та інше.</string>
+    <string name="get_started">Почати</string>
+    <string name="skip">Пропустити</string>
+
+    <string name="error_no_credentials">Необхідні дані доступу App Store Connect</string>
+    <string name="error_api_key_not_found">Файл API ключа не знайдено за шляхом %s</string>
+    <string name="error_not_gradle_project">Це не проект Gradle (відсутні файли settings/build)</string>
+    <string name="error_missing_gradlew">Відсутній gradlew wrapper</string>
+</resources>

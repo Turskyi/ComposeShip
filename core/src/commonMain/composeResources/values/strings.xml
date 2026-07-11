@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">ComposeShip</string>
+    <string name="macos_release_title">macOS App Store Release Tool</string>
+    <string name="step_1_title">Step 1: Select Compose Multiplatform Project Root</string>
+    <string name="project_root_label">Project Root Path</string>
+    <string name="browse">Browse</string>
+    <string name="next">Next</string>
+    <string name="step_2_title">Step 2: Select Packaging Task</string>
+    <string name="step_3_title">Step 3: Select Signing Identities</string>
+    <string name="app_identity_label">Application Identity (for .app bundle)</string>
+    <string name="no_app_identities">No Application identities found.</string>
+    <string name="installer_identity_label">Installer Identity (for .pkg package)</string>
+    <string name="no_installer_identities">No Installer identities found.</string>
+    <string name="step_4_title">Step 4: App Store Connect Credentials</string>
+    <string name="issuer_id_label">Issuer ID</string>
+    <string name="key_id_label">Key ID</string>
+    <string name="api_key_path_label">API Key (.p8) Path</string>
+    <string name="step_5_title">Step 5: Release Process</string>
+    <string name="start_release">Start Build &amp; Release</string>
+    <string name="released_successfully">Released Successfully</string>
+    <string name="logs">Logs</string>
+    <string name="show_details">Show Details</string>
+    <string name="hide_details">Hide Details</string>
+
+    <string name="onboarding_title">Welcome to ComposeShip</string>
+    <string name="onboarding_description">Your essential suite of developer utility tools for Compose Multiplatform. Streamlining your workflow across Android, iOS, Web, and Desktop.</string>
+    <string name="onboarding_feature_macos">🚀 macOS Release Tool: Effortless App Store submission.</string>
+    <string name="onboarding_feature_more">🛠 More tools coming soon: Image resizing, background removal, and more.</string>
+    <string name="get_started">Get Started</string>
+    <string name="skip">Skip</string>
+
+    <string name="error_no_credentials">App Store Connect credentials are required</string>
+    <string name="error_api_key_not_found">API Key file not found at %s</string>
+    <string name="error_not_gradle_project">Not a Gradle project (missing settings/build files)</string>
+    <string name="error_missing_gradlew">Missing gradlew wrapper</string>
+</resources>

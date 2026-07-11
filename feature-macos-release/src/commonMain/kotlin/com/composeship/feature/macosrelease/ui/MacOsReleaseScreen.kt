@@ -1,5 +1,7 @@
 package com.composeship.feature.macosrelease.ui
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +34,8 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composeship.core.ui.TechnicalGridBackground
+import composeship.core.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MacOsReleaseScreen(
@@ -61,34 +65,42 @@ fun MacOsReleaseScreen(
         ) {
             Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
                 Text(
-                    text = "macOS App Store Release Tool",
+                    text = stringResource(Res.string.macos_release_title),
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(24.dp))
 
-                when (state.step) {
-                    ReleaseStep.SelectProject -> ProjectSelectionStep(
-                        state,
-                        viewModel
-                    )
+                AnimatedContent(
+                    targetState = state.step,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(300)) togetherWith
+                                fadeOut(animationSpec = tween(300))
+                    }
+                ) { step ->
+                    when (step) {
+                        ReleaseStep.SelectProject -> ProjectSelectionStep(
+                            state,
+                            viewModel
+                        )
 
-                    ReleaseStep.SelectTask -> TaskSelectionStep(
-                        state,
-                        viewModel
-                    )
+                        ReleaseStep.SelectTask -> TaskSelectionStep(
+                            state,
+                            viewModel
+                        )
 
-                    ReleaseStep.SigningIdentity -> IdentitySelectionStep(
-                        state,
-                        viewModel
-                    )
+                        ReleaseStep.SigningIdentity -> IdentitySelectionStep(
+                            state,
+                            viewModel
+                        )
 
-                    ReleaseStep.AppStoreCredentials -> CredentialsStep(
-                        state,
-                        viewModel
-                    )
+                        ReleaseStep.AppStoreCredentials -> CredentialsStep(
+                            state,
+                            viewModel
+                        )
 
-                    ReleaseStep.Process -> ReleaseProcessStep(state, viewModel)
+                        ReleaseStep.Process -> ReleaseProcessStep(state, viewModel)
+                    }
                 }
             }
         }
@@ -102,7 +114,7 @@ fun ProjectSelectionStep(
 ) {
     Column {
         Text(
-            "Step 1: Select Compose Multiplatform Project Root",
+            stringResource(Res.string.step_1_title),
             style = MaterialTheme.typography.titleMedium
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -111,7 +123,7 @@ fun ProjectSelectionStep(
             OutlinedTextField(
                 value = state.projectRoot,
                 onValueChange = { viewModel.onProjectRootChanged(it) },
-                label = { Text("Project Root Path") },
+                label = { Text(stringResource(Res.string.project_root_label)) },
                 modifier = Modifier.weight(1f),
                 isError = state.projectValidationError != null,
                 supportingText = {
@@ -125,7 +137,7 @@ fun ProjectSelectionStep(
                 onClick = { viewModel.onBrowseProjectRoot() },
                 modifier = Modifier.padding(top = 8.dp)
             ) {
-                Text("Browse")
+                Text(stringResource(Res.string.browse))
             }
         }
 
@@ -135,7 +147,7 @@ fun ProjectSelectionStep(
             onClick = { viewModel.nextStep() },
             enabled = state.isProjectValid && state.projectRoot.isNotEmpty()
         ) {
-            Text("Next")
+            Text(stringResource(Res.string.next))
         }
     }
 }
@@ -147,7 +159,7 @@ fun TaskSelectionStep(
 ) {
     Column {
         Text(
-            "Step 2: Select Packaging Task",
+            stringResource(Res.string.step_2_title),
             style = MaterialTheme.typography.titleMedium
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -165,7 +177,7 @@ fun TaskSelectionStep(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = { viewModel.nextStep() }) {
-            Text("Next")
+            Text(stringResource(Res.string.next))
         }
     }
 }
@@ -177,18 +189,18 @@ fun IdentitySelectionStep(
 ) {
     Column {
         Text(
-            "Step 3: Select Signing Identities",
+            stringResource(Res.string.step_3_title),
             style = MaterialTheme.typography.titleMedium
         )
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            "Application Identity (for .app bundle)",
+            stringResource(Res.string.app_identity_label),
             style = MaterialTheme.typography.titleSmall
         )
         if (state.signingIdentities.isEmpty()) {
             Text(
-                "No Application identities found.",
+                stringResource(Res.string.no_app_identities),
                 color = MaterialTheme.colorScheme.error
             )
         }
@@ -205,12 +217,12 @@ fun IdentitySelectionStep(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            "Installer Identity (for .pkg package)",
+            stringResource(Res.string.installer_identity_label),
             style = MaterialTheme.typography.titleSmall
         )
         if (state.installerIdentities.isEmpty()) {
             Text(
-                "No Installer identities found.",
+                stringResource(Res.string.no_installer_identities),
                 color = MaterialTheme.colorScheme.error
             )
         }
@@ -233,7 +245,7 @@ fun IdentitySelectionStep(
             enabled = state.selectedIdentity.isNotEmpty() &&
                     state.selectedInstallerIdentity.isNotEmpty()
         ) {
-            Text("Next")
+            Text(stringResource(Res.string.next))
         }
     }
 }
@@ -245,7 +257,7 @@ fun CredentialsStep(
 ) {
     Column {
         Text(
-            "Step 4: App Store Connect Credentials",
+            stringResource(Res.string.step_4_title),
             style = MaterialTheme.typography.titleMedium
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -259,7 +271,7 @@ fun CredentialsStep(
                     state.apiKeyPath
                 )
             },
-            label = { Text("Issuer ID") },
+            label = { Text(stringResource(Res.string.issuer_id_label)) },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -272,7 +284,7 @@ fun CredentialsStep(
                     state.apiKeyPath
                 )
             },
-            label = { Text("Key ID") },
+            label = { Text(stringResource(Res.string.key_id_label)) },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -285,14 +297,14 @@ fun CredentialsStep(
                     it
                 )
             },
-            label = { Text("API Key (.p8) Path") },
+            label = { Text(stringResource(Res.string.api_key_path_label)) },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = { viewModel.nextStep() }) {
-            Text("Next")
+            Text(stringResource(Res.string.next))
         }
     }
 }
@@ -306,7 +318,7 @@ fun ReleaseProcessStep(
 
     Column {
         Text(
-            "Step 5: Release Process",
+            stringResource(Res.string.step_5_title),
             style = MaterialTheme.typography.titleMedium
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -323,9 +335,9 @@ fun ReleaseProcessStep(
         ) {
             Text(
                 if (state.releaseSuccess)
-                    "Released Successfully"
+                    stringResource(Res.string.released_successfully)
                 else
-                    "Start Build & Release",
+                    stringResource(Res.string.start_release),
             )
         }
 
@@ -335,9 +347,9 @@ fun ReleaseProcessStep(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Logs", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(Res.string.logs), style = MaterialTheme.typography.titleSmall)
             TextButton(onClick = { showLogs = !showLogs }) {
-                Text(if (showLogs) "Hide Details" else "Show Details")
+                Text(if (showLogs) stringResource(Res.string.hide_details) else stringResource(Res.string.show_details))
             }
         }
 

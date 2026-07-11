@@ -8,6 +8,10 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+compose.resources {
+    publicResClass = true
+}
+
 kotlin {
     iosArm64()
     iosSimulatorArm64()
@@ -46,6 +50,7 @@ kotlin {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
+            api(libs.compose.components.resources)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
