@@ -32,7 +32,8 @@ data class MacOsReleaseState(
     val releaseLogs: List<LogEntry> = emptyList(),
     val isReleasing: Boolean = false,
     val releaseError: String? = null,
-    val releaseSuccess: Boolean = false
+    val releaseSuccess: Boolean = false,
+    val appStoreId: String? = null
 )
 
 enum class ReleaseStep {

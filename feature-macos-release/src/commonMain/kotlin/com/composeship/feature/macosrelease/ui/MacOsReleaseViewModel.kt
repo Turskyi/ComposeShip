@@ -2,6 +2,7 @@ package com.composeship.feature.macosrelease.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.composeship.feature.macosrelease.domain.service.AppStoreConnectService
 import com.composeship.feature.macosrelease.domain.service.CredentialService
 import com.composeship.feature.macosrelease.domain.service.FileSystemService
 import com.composeship.feature.macosrelease.domain.service.GradleService
@@ -17,7 +18,8 @@ class MacOsReleaseViewModel(
     private val processService: ProcessService,
     private val gradleService: GradleService,
     private val fileSystemService: FileSystemService,
-    private val credentialService: CredentialService
+    private val credentialService: CredentialService,
+    private val appStoreConnectService: AppStoreConnectService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MacOsReleaseState())
@@ -784,16 +786,28 @@ class MacOsReleaseViewModel(
 
                 is ProcessOutput.Complete -> {
                     if (output.exitCode == 0) {
-                        appendLog(
-                            "All steps completed successfully!",
-                            LogType.Success
-                        )
-                        _state.update {
-                            it.copy(
-                                isReleasing = false,
-                                releaseSuccess = true
+                        appendLog("All steps completed successfully!", LogType.Success)
+                        _state.update { it.copy(releaseSuccess = true) }
+                        
+                        // Try to find App Store ID
+                        appendLog("Resolving App Store ID...")
+                        val bundleId = getBundleId(appPath)
+                        if (bundleId != null) {
+                            val appId = appStoreConnectService.findAppId(
+                                bundleId = bundleId,
+                                issuerId = _state.value.apiIssuerId,
+                                keyId = _state.value.apiKeyId,
+                                keyPath = _state.value.apiKeyPath
                             )
+                            if (appId != null) {
+                                appendLog("Resolved App Store ID: $appId")
+                                _state.update { it.copy(appStoreId = appId) }
+                            } else {
+                                appendLog("Could not resolve App Store ID for bundle: $bundleId")
+                            }
                         }
+                        
+                        _state.update { it.copy(isReleasing = false) }
                     } else {
                         val errorMsg = when {
                             lastErrorLine.contains("90249") || lastErrorLine.contains(
@@ -823,6 +837,19 @@ class MacOsReleaseViewModel(
                 }
             }
         }
+    }
+
+    private suspend fun getBundleId(appPath: String): String? {
+        var bundleId: String? = null
+        processService.execute(
+            listOf("/usr/libexec/PlistBuddy", "-c", "Print :CFBundleIdentifier", "$appPath/Contents/Info.plist"),
+            directory = _state.value.projectRoot
+        ).collect { output ->
+            if (output is ProcessOutput.Stdout) {
+                bundleId = output.line.trim()
+            }
+        }
+        return bundleId
     }
 
     private suspend fun executeCommand(command: List<String>): Int {

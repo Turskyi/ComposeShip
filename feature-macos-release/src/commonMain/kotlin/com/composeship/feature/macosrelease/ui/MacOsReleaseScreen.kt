@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Launch
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
@@ -43,6 +45,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -171,7 +174,7 @@ fun MacOsReleaseScreen(
                             state,
                             viewModel
                         )
-
+                        
                         ReleaseStep.AppCategory -> CategorySelectionStep(
                             state,
                             viewModel
@@ -358,7 +361,7 @@ fun CategorySelectionStep(
                     )
                 },
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                modifier = Modifier.menuAnchor().fillMaxWidth()
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable, true).fillMaxWidth()
             )
 
             ExposedDropdownMenu(
@@ -841,6 +844,27 @@ fun ReleaseProcessStep(
                 Spacer(modifier = Modifier.width(8.dp))
                 TextButton(onClick = { viewModel.startOver() }) {
                     Text(stringResource(Res.string.start_over))
+                }
+            }
+        }
+
+        if (state.releaseSuccess && state.appStoreId != null) {
+            val uriHandler = LocalUriHandler.current
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = { uriHandler.openUri("https://appstoreconnect.apple.com/apps/${state.appStoreId}/testflight/macos") }
+                ) {
+                    Icon(Icons.Default.Launch, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Open TestFlight")
+                }
+                OutlinedButton(
+                    onClick = { uriHandler.openUri("https://appstoreconnect.apple.com/apps/${state.appStoreId}/distribution/macos/version/inflight") }
+                ) {
+                    Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Open Distribution")
                 }
             }
         }
