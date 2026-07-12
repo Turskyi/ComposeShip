@@ -6,6 +6,10 @@
     <string name="browse">Огляд</string>
     <string name="next">Далі</string>
     <string name="step_2_title">Крок 2: Виберіть завдання пакування</string>
+    <string name="task_release_title">packageReleasePkg</string>
+    <string name="task_release_desc">Збірка для релізу - необхідна для подання в App Store</string>
+    <string name="task_debug_title">packagePkg</string>
+    <string name="task_debug_desc">Збірка для налагодження - лише для локального тестування, не для подання в App Store</string>
     <string name="step_3_title">Крок 3: Виберіть сертифікати підпису</string>
     <string name="app_identity_label">Сертифікат програми (для .app пакету)</string>
     <string name="no_app_identities">Сертифікати програми не знайдені.</string>

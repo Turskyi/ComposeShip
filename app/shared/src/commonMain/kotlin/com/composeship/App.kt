@@ -5,20 +5,25 @@ import androidx.compose.ui.Modifier
 import com.composeship.ui.MainScaffold
 import com.composeship.ui.onboarding.OnboardingScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.composeship.core.domain.rememberAppLocale
 
 @Composable
 fun App(
     appContainer: AppContainer,
     content: @Composable (Modifier) -> Unit
 ) {
-    val mainViewModel = remember { appContainer.createMainViewModel() }
+    val appLocale = rememberAppLocale()
+    val mainViewModel = remember(appLocale) { appContainer.createMainViewModel(appLocale) }
     val showOnboarding by mainViewModel.showOnboarding.collectAsStateWithLifecycle()
+    val selectedLanguageCode by mainViewModel.selectedLanguageCode.collectAsStateWithLifecycle()
 
-    MainScaffold(viewModel = mainViewModel) { modifier ->
-        if (showOnboarding) {
-            OnboardingScreen(onDismiss = { mainViewModel.dismissOnboarding() })
-        } else {
-            content(modifier)
+    key(selectedLanguageCode) {
+        MainScaffold(viewModel = mainViewModel) { modifier ->
+            if (showOnboarding) {
+                OnboardingScreen(onDismiss = { mainViewModel.dismissOnboarding() })
+            } else {
+                content(modifier)
+            }
         }
     }
 }

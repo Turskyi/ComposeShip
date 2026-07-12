@@ -92,14 +92,14 @@ class MacOsReleaseViewModel(
         }
 
         _state.update { it.copy(isProjectValid = true, projectValidationError = null) }
-        detectTasks(path)
+        detectTasks()
     }
 
-    private fun detectTasks(path: String) {
+    private fun detectTasks() {
         // For now, we'll suggest common package tasks
         // In a real implementation, we could run `./gradlew tasks`
-        val tasks = listOf("packagePkg", "packageReleasePkg")
-        _state.update { it.copy(availableTasks = tasks, selectedTask = tasks.firstOrNull() ?: "") }
+        val tasks = listOf("packageReleasePkg", "packagePkg")
+        _state.update { it.copy(availableTasks = tasks, selectedTask = tasks.first()) }
     }
 
     fun onTaskSelected(task: String) {

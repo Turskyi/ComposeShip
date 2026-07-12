@@ -1,7 +1,10 @@
 package com.composeship.feature.macosrelease.ui
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,13 +31,39 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composeship.core.ui.TechnicalGridBackground
-import composeship.core.generated.resources.*
+import composeship.core.generated.resources.Res
+import composeship.core.generated.resources.api_key_path_label
+import composeship.core.generated.resources.app_identity_label
+import composeship.core.generated.resources.browse
+import composeship.core.generated.resources.hide_details
+import composeship.core.generated.resources.installer_identity_label
+import composeship.core.generated.resources.issuer_id_label
+import composeship.core.generated.resources.key_id_label
+import composeship.core.generated.resources.logs
+import composeship.core.generated.resources.macos_release_title
+import composeship.core.generated.resources.next
+import composeship.core.generated.resources.no_app_identities
+import composeship.core.generated.resources.no_installer_identities
+import composeship.core.generated.resources.project_root_label
+import composeship.core.generated.resources.released_successfully
+import composeship.core.generated.resources.show_details
+import composeship.core.generated.resources.start_release
+import composeship.core.generated.resources.step_1_title
+import composeship.core.generated.resources.step_2_title
+import composeship.core.generated.resources.step_3_title
+import composeship.core.generated.resources.step_4_title
+import composeship.core.generated.resources.step_5_title
+import composeship.core.generated.resources.task_debug_desc
+import composeship.core.generated.resources.task_debug_title
+import composeship.core.generated.resources.task_release_desc
+import composeship.core.generated.resources.task_release_title
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -99,7 +128,10 @@ fun MacOsReleaseScreen(
                             viewModel
                         )
 
-                        ReleaseStep.Process -> ReleaseProcessStep(state, viewModel)
+                        ReleaseStep.Process -> ReleaseProcessStep(
+                            state,
+                            viewModel
+                        )
                     }
                 }
             }
@@ -157,21 +189,67 @@ fun TaskSelectionStep(
     state: MacOsReleaseState,
     viewModel: MacOsReleaseViewModel
 ) {
+    var showDebugWarning by remember { mutableStateOf(false) }
+
     Column {
         Text(
             stringResource(Res.string.step_2_title),
             style = MaterialTheme.typography.titleMedium
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         state.availableTasks.forEach { task ->
-            Row(modifier = Modifier.fillMaxWidth()) {
-                RadioButton(
-                    selected = state.selectedTask == task,
-                    onClick = { viewModel.onTaskSelected(task) }
-                )
-                Text(task, modifier = Modifier.padding(start = 8.dp))
+            val isRelease = task == "packageReleasePkg"
+            val title =
+                if (isRelease) Res.string.task_release_title else Res.string.task_debug_title
+            val desc =
+                if (isRelease) Res.string.task_release_desc else Res.string.task_debug_desc
+
+            Surface(
+                onClick = {
+                    viewModel.onTaskSelected(task)
+                    if (!isRelease) showDebugWarning = true
+                },
+                shape = MaterialTheme.shapes.medium,
+                color = if (state.selectedTask == task) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = state.selectedTask == task,
+                        onClick = {
+                            viewModel.onTaskSelected(task)
+                            if (!isRelease) showDebugWarning = true
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = stringResource(title),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (!isRelease && state.selectedTask == task) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        if (showDebugWarning && state.selectedTask == "packagePkg") {
+            Text(
+                "⚠️ Warning: packagePkg is for local testing. Do not use for App Store submission.",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -347,9 +425,16 @@ fun ReleaseProcessStep(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(stringResource(Res.string.logs), style = MaterialTheme.typography.titleSmall)
+            Text(
+                stringResource(Res.string.logs),
+                style = MaterialTheme.typography.titleSmall
+            )
             TextButton(onClick = { showLogs = !showLogs }) {
-                Text(if (showLogs) stringResource(Res.string.hide_details) else stringResource(Res.string.show_details))
+                Text(
+                    if (showLogs) stringResource(Res.string.hide_details) else stringResource(
+                        Res.string.show_details
+                    )
+                )
             }
         }
 
