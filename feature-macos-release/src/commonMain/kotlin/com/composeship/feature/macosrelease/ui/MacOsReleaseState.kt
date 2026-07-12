@@ -17,6 +17,7 @@ data class MacOsReleaseState(
     val selectedIdentity: String = "",
     val installerIdentities: List<String> = emptyList(),
     val selectedInstallerIdentity: String = "",
+    val isLoadingIdentities: Boolean = false,
     
     val apiIssuerId: String = "",
     val apiKeyId: String = "",

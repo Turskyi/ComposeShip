@@ -140,46 +140,59 @@ class MacOsReleaseViewModel(
     }
 
     fun loadSigningIdentities() {
-        _state.update { it.copy(signingIdentities = emptyList(), installerIdentities = emptyList()) }
+        _state.update { 
+            it.copy(
+                signingIdentities = emptyList(), 
+                installerIdentities = emptyList(),
+                isLoadingIdentities = true
+            ) 
+        }
         viewModelScope.launch {
             processService.execute(
                 listOf(
                     "security",
                     "find-identity",
-                    "-p",
-                    "codesigning",
                     "-v"
                 )
             )
                 .collect { output ->
-                    if (output is ProcessOutput.Stdout) {
-                        val identity = parseIdentity(output.line)
-                        if (identity != null) {
-                            _state.update { s ->
-                                if (identity.contains("Application")) {
-                                    val newIdentities =
-                                        s.signingIdentities + identity
-                                    // Prefer "3rd Party Mac Developer Application" over "Developer ID"
-                                    val currentSelected = s.selectedIdentity
-                                    val shouldUpdateSelection = currentSelected.isEmpty() ||
-                                            (currentSelected.contains("Developer ID") && identity.contains("3rd Party Mac Developer"))
-                                    
-                                    s.copy(
-                                        signingIdentities = newIdentities,
-                                        selectedIdentity = if (shouldUpdateSelection) identity else currentSelected
-                                    )
-                                } else if (identity.contains("Installer")) {
-                                    val newIdentities =
-                                        s.installerIdentities + identity
-                                    s.copy(
-                                        installerIdentities = newIdentities,
-                                        selectedInstallerIdentity = s.selectedInstallerIdentity.ifEmpty { identity }
-                                    )
-                                } else {
-                                    s
+                    when (output) {
+                        is ProcessOutput.Stdout -> {
+                            val identity = parseIdentity(output.line)
+                            if (identity != null) {
+                                _state.update { s ->
+                                    if (identity.contains("Application")) {
+                                        val newIdentities =
+                                            s.signingIdentities + identity
+                                        // Prefer "3rd Party Mac Developer Application" over "Developer ID"
+                                        val currentSelected = s.selectedIdentity
+                                        val shouldUpdateSelection = currentSelected.isEmpty() ||
+                                                (currentSelected.contains("Developer ID") && identity.contains("3rd Party Mac Developer"))
+                                        
+                                        s.copy(
+                                            signingIdentities = newIdentities,
+                                            selectedIdentity = if (shouldUpdateSelection) identity else currentSelected
+                                        )
+                                    } else if (identity.contains("Installer") || identity.contains("Distribution")) {
+                                        val newIdentities =
+                                            s.installerIdentities + identity
+                                        s.copy(
+                                            installerIdentities = newIdentities,
+                                            selectedInstallerIdentity = s.selectedInstallerIdentity.ifEmpty { identity }
+                                        )
+                                    } else {
+                                        s
+                                    }
                                 }
                             }
                         }
+                        is ProcessOutput.Complete -> {
+                            _state.update { it.copy(isLoadingIdentities = false) }
+                        }
+                        is ProcessOutput.Error -> {
+                            _state.update { it.copy(isLoadingIdentities = false) }
+                        }
+                        else -> {}
                     }
                 }
         }

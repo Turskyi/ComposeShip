@@ -298,7 +298,9 @@ fun IdentitySelectionStep(
             stringResource(Res.string.app_identity_label),
             style = MaterialTheme.typography.titleSmall
         )
-        if (state.signingIdentities.isEmpty()) {
+        if (state.isLoadingIdentities) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+        } else if (state.signingIdentities.isEmpty()) {
             Text(
                 stringResource(Res.string.no_app_identities),
                 color = MaterialTheme.colorScheme.error,
@@ -356,7 +358,9 @@ fun IdentitySelectionStep(
             stringResource(Res.string.installer_identity_label),
             style = MaterialTheme.typography.titleSmall
         )
-        if (state.installerIdentities.isEmpty()) {
+        if (state.isLoadingIdentities) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+        } else if (state.installerIdentities.isEmpty()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
