@@ -8,11 +8,12 @@
     <string name="back">Back</string>
     <string name="start_over">Start Over</string>
     <string name="step_2_title">Step 2: Select Packaging Task</string>
+    <string name="step_category_title">Step 3: Select Application Category</string>
     <string name="task_release_title">packageReleasePkg</string>
     <string name="task_release_desc">Release build - required for App Store submission</string>
     <string name="task_debug_title">packagePkg</string>
     <string name="task_debug_desc">Debug build - for local testing only, not for submission.</string>
-    <string name="step_3_title">Step 3: Select Signing Identities</string>
+    <string name="step_3_title">Step 4: Select Signing Identities</string>
     <string name="app_identity_label">Application Identity (for .app bundle)</string>
     <string name="no_app_identities">No Application identities found.</string>
     <string name="installer_identity_label">Installer Identity (for .pkg package)</string>
@@ -22,7 +23,7 @@
     <string name="installer_identity_explanation">A separate certificate is required for signing the installer package (.pkg), distinct from the Application identity above.</string>
     <string name="open_apple_developer">Open Apple Developer Portal</string>
     <string name="refresh">Refresh</string>
-    <string name="step_4_title">Step 4: App Store Connect Credentials</string>
+    <string name="step_4_title">Step 5: App Store Connect Credentials</string>
     <string name="issuer_id_label">Issuer ID</string>
     <string name="key_id_label">Key ID</string>
     <string name="api_key_path_label">API Key (.p8) Path</string>
@@ -32,7 +33,7 @@
     <string name="api_key_link_text">Open App Store Connect API Page</string>
     <string name="error_invalid_issuer_id">Must be a valid UUID</string>
     <string name="error_invalid_key_id">Must be a 10-character alphanumeric ID</string>
-    <string name="step_5_title">Step 5: Release Process</string>
+    <string name="step_5_title">Step 6: Release Process</string>
     <string name="start_release">Start Build &amp; Release</string>
     <string name="released_successfully">Released Successfully</string>
     <string name="logs">Logs</string>

@@ -6,7 +6,20 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -19,8 +32,31 @@ import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,7 +68,44 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composeship.core.ui.TechnicalGridBackground
-import composeship.core.generated.resources.*
+import composeship.core.generated.resources.Res
+import composeship.core.generated.resources.api_key_link_text
+import composeship.core.generated.resources.api_key_path_help
+import composeship.core.generated.resources.api_key_path_label
+import composeship.core.generated.resources.app_identity_label
+import composeship.core.generated.resources.back
+import composeship.core.generated.resources.browse
+import composeship.core.generated.resources.error_invalid_issuer_id
+import composeship.core.generated.resources.error_invalid_key_id
+import composeship.core.generated.resources.hide_details
+import composeship.core.generated.resources.identity_app_store_desc
+import composeship.core.generated.resources.identity_developer_id_desc
+import composeship.core.generated.resources.installer_identity_explanation
+import composeship.core.generated.resources.installer_identity_label
+import composeship.core.generated.resources.issuer_id_help
+import composeship.core.generated.resources.issuer_id_label
+import composeship.core.generated.resources.key_id_help
+import composeship.core.generated.resources.key_id_label
+import composeship.core.generated.resources.logs
+import composeship.core.generated.resources.macos_release_title
+import composeship.core.generated.resources.next
+import composeship.core.generated.resources.no_app_identities
+import composeship.core.generated.resources.no_installer_identities
+import composeship.core.generated.resources.open_apple_developer
+import composeship.core.generated.resources.project_root_label
+import composeship.core.generated.resources.refresh
+import composeship.core.generated.resources.released_successfully
+import composeship.core.generated.resources.show_details
+import composeship.core.generated.resources.start_over
+import composeship.core.generated.resources.start_release
+import composeship.core.generated.resources.step_1_title
+import composeship.core.generated.resources.step_2_title
+import composeship.core.generated.resources.step_3_title
+import composeship.core.generated.resources.step_4_title
+import composeship.core.generated.resources.step_5_title
+import composeship.core.generated.resources.step_category_title
+import composeship.core.generated.resources.task_debug_desc
+import composeship.core.generated.resources.task_release_desc
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
@@ -95,6 +168,11 @@ fun MacOsReleaseScreen(
                         )
 
                         ReleaseStep.SelectTask -> TaskSelectionStep(
+                            state,
+                            viewModel
+                        )
+
+                        ReleaseStep.AppCategory -> CategorySelectionStep(
                             state,
                             viewModel
                         )
@@ -181,10 +259,11 @@ fun TaskSelectionStep(
 
         state.availableTasks.forEach { task ->
             val isRelease = task.contains("Release", ignoreCase = true)
-            val descRes = if (isRelease) Res.string.task_release_desc else Res.string.task_debug_desc
-            
+            val descRes =
+                if (isRelease) Res.string.task_release_desc else Res.string.task_debug_desc
+
             Surface(
-                onClick = { 
+                onClick = {
                     viewModel.onTaskSelected(task)
                     if (!isRelease) showDebugWarning = true
                 },
@@ -198,7 +277,7 @@ fun TaskSelectionStep(
                 ) {
                     RadioButton(
                         selected = state.selectedTask == task,
-                        onClick = { 
+                        onClick = {
                             viewModel.onTaskSelected(task)
                             if (!isRelease) showDebugWarning = true
                         }
@@ -206,7 +285,7 @@ fun TaskSelectionStep(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = task, // Show the actual task name
+                            text = task,
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (!isRelease && state.selectedTask == task) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                         )
@@ -221,7 +300,11 @@ fun TaskSelectionStep(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        if (showDebugWarning && !state.selectedTask.contains("Release", ignoreCase = true)) {
+        if (showDebugWarning && !state.selectedTask.contains(
+                "Release",
+                ignoreCase = true
+            )
+        ) {
             Text(
                 "⚠️ Warning: packagePkg is for local testing. Do not use for App Store submission.",
                 color = MaterialTheme.colorScheme.error,
@@ -231,6 +314,71 @@ fun TaskSelectionStep(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        Row {
+            OutlinedButton(onClick = { viewModel.previousStep() }) {
+                Text(stringResource(Res.string.back))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = { viewModel.nextStep() }) {
+                Text(stringResource(Res.string.next))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CategorySelectionStep(
+    state: MacOsReleaseState,
+    viewModel: MacOsReleaseViewModel
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column {
+        Text(
+            stringResource(Res.string.step_category_title),
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = state.selectedCategory,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Application Category") },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(
+                        expanded = expanded
+                    )
+                },
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                state.availableCategories.forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(category) },
+                        onClick = {
+                            viewModel.onCategorySelected(category)
+                            expanded = false
+                        },
+                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         Row {
             OutlinedButton(onClick = { viewModel.previousStep() }) {
@@ -513,11 +661,24 @@ fun CredentialsStep(
                     FilterChip(
                         selected = state.apiKeyPath == path,
                         onClick = {
-                            val keyIdMatch = Regex("AuthKey_([A-Z0-9]{10})\\.p8").find(filename)
-                            val detectedKeyId = keyIdMatch?.groupValues?.get(1) ?: state.apiKeyId
-                            viewModel.onCredentialsChanged(state.apiIssuerId, detectedKeyId, path)
+                            val keyIdMatch =
+                                Regex("AuthKey_([A-Z0-9]{10})\\.p8").find(
+                                    filename
+                                )
+                            val detectedKeyId = keyIdMatch?.groupValues?.get(1)
+                                ?: state.apiKeyId
+                            viewModel.onCredentialsChanged(
+                                state.apiIssuerId,
+                                detectedKeyId,
+                                path
+                            )
                         },
-                        label = { Text(filename, style = MaterialTheme.typography.labelSmall) },
+                        label = {
+                            Text(
+                                filename,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Key,
@@ -621,19 +782,21 @@ fun ReleaseProcessStep(
     var autoScroll by remember { mutableStateOf(true) }
     val clipboardManager = LocalClipboardManager.current
 
-    // Auto-scroll logic
+    // Fixed auto-scroll logic: use scrollToItem for immediate response
     LaunchedEffect(state.releaseLogs.size) {
         if (autoScroll && state.releaseLogs.isNotEmpty()) {
-            listState.animateScrollToItem(state.releaseLogs.size - 1)
+            listState.scrollToItem(state.releaseLogs.size - 1)
         }
     }
 
     // Detect if user scrolls away from bottom
     LaunchedEffect(listState.isScrollInProgress) {
         if (listState.isScrollInProgress) {
-            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            val layoutInfo = listState.layoutInfo
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
             if (lastVisibleItem != null) {
-                val isAtBottom = lastVisibleItem.index == state.releaseLogs.size - 1
+                val isAtBottom =
+                    lastVisibleItem.index == state.releaseLogs.size - 1
                 if (!isAtBottom) {
                     autoScroll = false
                 }
@@ -641,7 +804,7 @@ fun ReleaseProcessStep(
         }
     }
 
-    Column {
+    Column(modifier = Modifier.fillMaxSize()) {
         Text(
             stringResource(Res.string.step_5_title),
             style = MaterialTheme.typography.titleMedium
@@ -698,7 +861,10 @@ fun ReleaseProcessStep(
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
                         onClick = {
-                            val text = state.releaseLogs.joinToString("\n") { it.message }
+                            val text =
+                                state.releaseLogs.joinToString(
+                                    separator = "\n",
+                                ) { it.message }
                             clipboardManager.setText(AnnotatedString(text))
                         },
                         modifier = Modifier.size(24.dp)
@@ -724,7 +890,7 @@ fun ReleaseProcessStep(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(400.dp)
+                    .weight(1f)
                     .background(
                         MaterialTheme.colorScheme.surfaceVariant.copy(
                             alpha = 0.3f
@@ -770,7 +936,10 @@ fun ReleaseProcessStep(
                             modifier = Modifier.size(40.dp),
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         ) {
-                            Icon(Icons.Default.KeyboardArrowDown, "Jump to bottom")
+                            Icon(
+                                Icons.Default.KeyboardArrowDown,
+                                "Jump to bottom"
+                            )
                         }
                     }
                     val showJumpToTop by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }

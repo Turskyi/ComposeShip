@@ -215,10 +215,19 @@ class MacOsReleaseViewModel(
         _state.update { it.copy(selectedTask = task) }
     }
 
+    fun onCategorySelected(category: String) {
+        _state.update { it.copy(selectedCategory = category) }
+    }
+
     fun nextStep() {
         val next = when (_state.value.step) {
             ReleaseStep.SelectProject -> ReleaseStep.SelectTask
             ReleaseStep.SelectTask -> {
+                loadAvailableCategories()
+                ReleaseStep.AppCategory
+            }
+
+            ReleaseStep.AppCategory -> {
                 loadSigningIdentities()
                 ReleaseStep.SigningIdentity
             }
@@ -234,11 +243,39 @@ class MacOsReleaseViewModel(
         val prev = when (_state.value.step) {
             ReleaseStep.SelectProject -> ReleaseStep.SelectProject
             ReleaseStep.SelectTask -> ReleaseStep.SelectProject
-            ReleaseStep.SigningIdentity -> ReleaseStep.SelectTask
+            ReleaseStep.AppCategory -> ReleaseStep.SelectTask
+            ReleaseStep.SigningIdentity -> ReleaseStep.AppCategory
             ReleaseStep.AppStoreCredentials -> ReleaseStep.SigningIdentity
             ReleaseStep.Process -> ReleaseStep.AppStoreCredentials
         }
         _state.update { it.copy(step = prev) }
+    }
+
+    private fun loadAvailableCategories() {
+        val categories = listOf(
+            "public.app-category.business",
+            "public.app-category.developer-tools",
+            "public.app-category.education",
+            "public.app-category.entertainment",
+            "public.app-category.finance",
+            "public.app-category.games",
+            "public.app-category.graphics-design",
+            "public.app-category.healthcare-fitness",
+            "public.app-category.lifestyle",
+            "public.app-category.medical",
+            "public.app-category.music",
+            "public.app-category.news",
+            "public.app-category.photography",
+            "public.app-category.productivity",
+            "public.app-category.reference",
+            "public.app-category.social-networking",
+            "public.app-category.sports",
+            "public.app-category.travel",
+            "public.app-category.utilities",
+            "public.app-category.video",
+            "public.app-category.weather"
+        )
+        _state.update { it.copy(availableCategories = categories) }
     }
 
     fun startOver() {
@@ -506,6 +543,27 @@ class MacOsReleaseViewModel(
             )
         )
 
+        // Fix: Apply selected category
+        appendLog("Setting application category: ${_state.value.selectedCategory}")
+        val categoryExit = executeCommand(
+            listOf(
+                "/usr/libexec/PlistBuddy",
+                "-c",
+                "Set :LSApplicationCategoryType ${_state.value.selectedCategory}",
+                infoPlist
+            )
+        )
+        if (categoryExit != 0) {
+            executeCommand(
+                listOf(
+                    "/usr/libexec/PlistBuddy",
+                    "-c",
+                    "Add :LSApplicationCategoryType string ${_state.value.selectedCategory}",
+                    infoPlist
+                )
+            )
+        }
+
         val subproject = appPath.removePrefix(root).substringBefore("/build/")
         val provProfile =
             "$root$subproject/src/desktopMain/entitlements/app.provisionprofile"
@@ -668,20 +726,25 @@ class MacOsReleaseViewModel(
         }
 
         appendLog("Step 8/8: Submitting to App Store...")
-        
+
         // Fix: altool requires the key to be in specific locations.
-        val home = System.getProperty("user.home") ?: ""
+        val home = try {
+            System.getProperty("user.home")
+        } catch (e: Exception) {
+            println("Error getting user.home: ${e.message}")
+            ""
+        }
         val approvedLocations = listOf(
             "$home/.appstoreconnect/private_keys",
             "$home/private_keys",
             "$home/.private_keys"
         )
-        
+
         val currentKeyPath = _state.value.apiKeyPath
         val keyFilename = currentKeyPath.substringAfterLast("/")
         val isApproved = approvedLocations.any { currentKeyPath.startsWith(it) }
-        
-        if (!isApproved) {
+
+        if (!isApproved && currentKeyPath.isNotEmpty()) {
             val targetDir = "$home/private_keys"
             val targetPath = "$targetDir/$keyFilename"
             appendLog("Copying API key to approved location: $targetPath")
@@ -689,37 +752,75 @@ class MacOsReleaseViewModel(
             executeCommand(listOf("cp", currentKeyPath, targetPath))
         }
 
-        val uploadExit = executeCommand(
+        var lastErrorLine = ""
+        processService.execute(
             listOf(
-                "xcrun",
-                "altool",
-                "--upload-app",
-                "-f",
-                pkgOutput,
-                "-t",
-                "macos",
-                "--apiKey",
-                _state.value.apiKeyId,
-                "--apiIssuer",
-                _state.value.apiIssuerId
-            )
-        )
+                "xcrun", "altool", "--upload-app",
+                "-f", pkgOutput,
+                "-t", "macos",
+                "--apiKey", _state.value.apiKeyId,
+                "--apiIssuer", _state.value.apiIssuerId
+            ),
+            directory = _state.value.projectRoot
+        ).collect { output ->
+            when (output) {
+                is ProcessOutput.Stdout -> appendLog(output.line)
+                is ProcessOutput.Stderr -> {
+                    appendLog(output.line, LogType.Error)
+                    if (output.line.contains(
+                            "Error:",
+                            ignoreCase = true
+                        ) || output.line.contains(
+                            "message",
+                            ignoreCase = true
+                        ) || output.line.contains(
+                            "description",
+                            ignoreCase = true
+                        )
+                    ) {
+                        lastErrorLine = output.line
+                    }
+                }
 
-        if (uploadExit == 0) {
-            appendLog("All steps completed successfully!", LogType.Success)
-            _state.update {
-                it.copy(
-                    isReleasing = false,
-                    releaseSuccess = true
-                )
-            }
-        } else {
-            val errorMsg = "Upload failed. This usually means your API Key, Issuer ID, or Team ID is incorrect, or your account lacks permissions."
-            _state.update {
-                it.copy(
-                    isReleasing = false,
-                    releaseError = errorMsg
-                )
+                is ProcessOutput.Complete -> {
+                    if (output.exitCode == 0) {
+                        appendLog(
+                            "All steps completed successfully!",
+                            LogType.Success
+                        )
+                        _state.update {
+                            it.copy(
+                                isReleasing = false,
+                                releaseSuccess = true
+                            )
+                        }
+                    } else {
+                        val errorMsg = when {
+                            lastErrorLine.contains("90249") || lastErrorLine.contains(
+                                "LSApplicationCategoryType"
+                            ) ->
+                                "Invalid Application Category. Ensure a valid category is selected in Step 3."
+
+                            lastErrorLine.isNotEmpty() -> lastErrorLine
+                            else -> "Upload failed. This usually means your API Key, Issuer ID, or Team ID is incorrect, or your account lacks permissions."
+                        }
+                        _state.update {
+                            it.copy(
+                                isReleasing = false,
+                                releaseError = errorMsg
+                            )
+                        }
+                    }
+                }
+
+                is ProcessOutput.Error -> {
+                    _state.update {
+                        it.copy(
+                            isReleasing = false,
+                            releaseError = output.throwable.message
+                        )
+                    }
+                }
             }
         }
     }

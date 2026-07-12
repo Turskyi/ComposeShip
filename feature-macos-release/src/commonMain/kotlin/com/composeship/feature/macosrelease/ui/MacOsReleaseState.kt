@@ -9,6 +9,9 @@ data class MacOsReleaseState(
     val availableTasks: List<String> = emptyList(),
     val selectedTask: String = "",
     
+    val availableCategories: List<String> = emptyList(),
+    val selectedCategory: String = "public.app-category.developer-tools",
+    
     val buildOutput: List<LogEntry> = emptyList(),
     val isBuilding: Boolean = false,
     val buildError: String? = null,
@@ -35,6 +38,7 @@ data class MacOsReleaseState(
 enum class ReleaseStep {
     SelectProject,
     SelectTask,
+    AppCategory,
     SigningIdentity,
     AppStoreCredentials,
     Process
