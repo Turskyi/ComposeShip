@@ -18,7 +18,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -35,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composeship.core.ui.TechnicalGridBackground
@@ -43,6 +47,9 @@ import composeship.core.generated.resources.api_key_path_label
 import composeship.core.generated.resources.app_identity_label
 import composeship.core.generated.resources.browse
 import composeship.core.generated.resources.hide_details
+import composeship.core.generated.resources.identity_app_store_desc
+import composeship.core.generated.resources.identity_developer_id_desc
+import composeship.core.generated.resources.installer_identity_explanation
 import composeship.core.generated.resources.installer_identity_label
 import composeship.core.generated.resources.issuer_id_label
 import composeship.core.generated.resources.key_id_label
@@ -51,7 +58,9 @@ import composeship.core.generated.resources.macos_release_title
 import composeship.core.generated.resources.next
 import composeship.core.generated.resources.no_app_identities
 import composeship.core.generated.resources.no_installer_identities
+import composeship.core.generated.resources.open_apple_developer
 import composeship.core.generated.resources.project_root_label
+import composeship.core.generated.resources.refresh
 import composeship.core.generated.resources.released_successfully
 import composeship.core.generated.resources.show_details
 import composeship.core.generated.resources.start_release
@@ -265,11 +274,24 @@ fun IdentitySelectionStep(
     state: MacOsReleaseState,
     viewModel: MacOsReleaseViewModel
 ) {
+    val uriHandler = LocalUriHandler.current
+
     Column {
-        Text(
-            stringResource(Res.string.step_3_title),
-            style = MaterialTheme.typography.titleMedium
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                stringResource(Res.string.step_3_title),
+                style = MaterialTheme.typography.titleMedium
+            )
+            TextButton(onClick = { viewModel.loadSigningIdentities() }) {
+                Icon(Icons.Default.Refresh, contentDescription = null)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(stringResource(Res.string.refresh))
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
@@ -279,44 +301,122 @@ fun IdentitySelectionStep(
         if (state.signingIdentities.isEmpty()) {
             Text(
                 stringResource(Res.string.no_app_identities),
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
             )
         }
         state.signingIdentities.forEach { identity ->
-            Row(modifier = Modifier.fillMaxWidth()) {
-                RadioButton(
-                    selected = state.selectedIdentity == identity,
-                    onClick = { viewModel.onIdentitySelected(identity) }
-                )
-                Text(identity, modifier = Modifier.padding(start = 8.dp))
+            val isAppStore =
+                identity.contains("3rd Party Mac Developer Application")
+            val isDeveloperId = identity.contains("Developer ID Application")
+            val description = when {
+                isAppStore -> stringResource(Res.string.identity_app_store_desc)
+                isDeveloperId -> stringResource(Res.string.identity_developer_id_desc)
+                else -> null
+            }
+
+            Surface(
+                onClick = { viewModel.onIdentitySelected(identity) },
+                shape = MaterialTheme.shapes.small,
+                color = if (state.selectedIdentity == identity) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(
+                        vertical = 4.dp,
+                        horizontal = 8.dp
+                    ),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = state.selectedIdentity == identity,
+                        onClick = { viewModel.onIdentitySelected(identity) }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            identity,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        if (description != null) {
+                            Text(
+                                description,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (isDeveloperId) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Text(
             stringResource(Res.string.installer_identity_label),
             style = MaterialTheme.typography.titleSmall
         )
         if (state.installerIdentities.isEmpty()) {
-            Text(
-                stringResource(Res.string.no_installer_identities),
-                color = MaterialTheme.colorScheme.error
-            )
-        }
-        state.installerIdentities.forEach { identity ->
-            Row(modifier = Modifier.fillMaxWidth()) {
-                RadioButton(
-                    selected = state.selectedInstallerIdentity == identity,
-                    onClick = {
-                        viewModel.onInstallerIdentitySelected(identity)
-                    }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+                    .background(
+                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f),
+                        MaterialTheme.shapes.small
+                    )
+                    .padding(12.dp)
+            ) {
+                Text(
+                    stringResource(Res.string.no_installer_identities),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
                 )
-                Text(identity, modifier = Modifier.padding(start = 8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    stringResource(Res.string.installer_identity_explanation),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { uriHandler.openUri("https://developer.apple.com/account/resources/certificates/list") }
+                ) {
+                    Text(stringResource(Res.string.open_apple_developer))
+                }
+            }
+        } else {
+            state.installerIdentities.forEach { identity ->
+                Surface(
+                    onClick = { viewModel.onInstallerIdentitySelected(identity) },
+                    shape = MaterialTheme.shapes.small,
+                    color = if (state.selectedInstallerIdentity == identity) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(
+                            vertical = 4.dp,
+                            horizontal = 8.dp
+                        ),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = state.selectedInstallerIdentity == identity,
+                            onClick = {
+                                viewModel.onInstallerIdentitySelected(identity)
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            identity,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = { viewModel.nextStep() },

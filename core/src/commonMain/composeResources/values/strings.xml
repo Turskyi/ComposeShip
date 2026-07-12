@@ -15,6 +15,11 @@
     <string name="no_app_identities">No Application identities found.</string>
     <string name="installer_identity_label">Installer Identity (for .pkg package)</string>
     <string name="no_installer_identities">No Installer identities found.</string>
+    <string name="identity_app_store_desc">Required for Mac App Store submission</string>
+    <string name="identity_developer_id_desc">For direct distribution outside the App Store — not valid for this flow.</string>
+    <string name="installer_identity_explanation">A separate certificate is required for signing the installer package (.pkg), distinct from the Application identity above.</string>
+    <string name="open_apple_developer">Open Apple Developer Portal</string>
+    <string name="refresh">Refresh</string>
     <string name="step_4_title">Step 4: App Store Connect Credentials</string>
     <string name="issuer_id_label">Issuer ID</string>
     <string name="key_id_label">Key ID</string>

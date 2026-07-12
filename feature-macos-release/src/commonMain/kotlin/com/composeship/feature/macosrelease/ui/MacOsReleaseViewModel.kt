@@ -139,7 +139,8 @@ class MacOsReleaseViewModel(
         _state.update { it.copy(step = next) }
     }
 
-    private fun loadSigningIdentities() {
+    fun loadSigningIdentities() {
+        _state.update { it.copy(signingIdentities = emptyList(), installerIdentities = emptyList()) }
         viewModelScope.launch {
             processService.execute(
                 listOf(
@@ -158,9 +159,14 @@ class MacOsReleaseViewModel(
                                 if (identity.contains("Application")) {
                                     val newIdentities =
                                         s.signingIdentities + identity
+                                    // Prefer "3rd Party Mac Developer Application" over "Developer ID"
+                                    val currentSelected = s.selectedIdentity
+                                    val shouldUpdateSelection = currentSelected.isEmpty() ||
+                                            (currentSelected.contains("Developer ID") && identity.contains("3rd Party Mac Developer"))
+                                    
                                     s.copy(
                                         signingIdentities = newIdentities,
-                                        selectedIdentity = s.selectedIdentity.ifEmpty { identity }
+                                        selectedIdentity = if (shouldUpdateSelection) identity else currentSelected
                                     )
                                 } else if (identity.contains("Installer")) {
                                     val newIdentities =
