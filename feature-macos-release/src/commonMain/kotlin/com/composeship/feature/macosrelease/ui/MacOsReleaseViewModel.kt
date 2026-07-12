@@ -43,7 +43,6 @@ class MacOsReleaseViewModel(
                 apiKeyPath = keyPath
             )
         }
-        // Trigger validation for loaded credentials
         onCredentialsChanged(issuerId, keyId, keyPath)
     }
 
@@ -61,7 +60,6 @@ class MacOsReleaseViewModel(
             "$home/development"
         )
 
-        // Add first-level subdirectories of ~/development if they exist
         val devDir = "$home/development"
         if (fileSystemService.exists(devDir)) {
             try {
@@ -69,7 +67,7 @@ class MacOsReleaseViewModel(
                 searchRoots.addAll(subDirs)
             } catch (e: Exception) {
                 /* ignore */
-                println("Error getting subdirectories of $devDir: ${e.message}")
+                println("Error listing files in $devDir: ${e.message}")
             }
         }
 
@@ -82,7 +80,7 @@ class MacOsReleaseViewModel(
                 }
             } catch (e: Exception) {
                 /* ignore */
-                println("Error accessing $dir: ${e.message}")
+                println("Error listing files in $dir: ${e.message}")
             }
         }
 
@@ -90,7 +88,6 @@ class MacOsReleaseViewModel(
             val fileList = detectedFiles.toList()
             _state.update { it.copy(detectedApiKeyFiles = fileList) }
 
-            // Autofill only if nothing was loaded from credentials storage
             if (fileList.size == 1 && _state.value.apiKeyPath.isEmpty()) {
                 val p8File = fileList.first()
                 val filename = p8File.substringAfterLast("/")
@@ -163,15 +160,51 @@ class MacOsReleaseViewModel(
                 projectValidationError = null
             )
         }
-        detectTasks()
+        detectTasks(path)
     }
 
-    private fun detectTasks() {
-        val tasks = listOf("packageReleasePkg", "packagePkg")
+    private fun detectTasks(path: String) {
+        val possibleSubprojects =
+            listOf("", "composeApp", "app/desktopApp", "desktop")
+        val foundTasks = mutableListOf<String>()
+
+        for (sub in possibleSubprojects) {
+            val prefix = if (sub.isEmpty()) ":" else ":$sub:"
+            val buildFilePath =
+                if (sub.isEmpty()) "$path/build.gradle.kts" else "$path/$sub/build.gradle.kts"
+
+            if (fileSystemService.exists(buildFilePath)) {
+                val content = fileSystemService.readFile(buildFilePath) ?: ""
+                // Only add tasks for modules that actually use the compose plugin AND apply it
+                val isComposeApplied =
+                    (content.contains("org.jetbrains.compose") || content.contains(
+                        "compose.desktop"
+                    )) &&
+                            !content.contains("apply false")
+
+                if (isComposeApplied) {
+                    foundTasks.add("${prefix}packageReleasePkg")
+                }
+            }
+        }
+
+        // Fallback if no subprojects found or if it's a simple structure
+        if (foundTasks.isEmpty()) {
+            foundTasks.add(":packageReleasePkg")
+        }
+
+        // Add debug counterparts for the discovered release tasks
+        val allTasks = mutableListOf<String>()
+        foundTasks.forEach { releaseTask ->
+            allTasks.add(releaseTask)
+            allTasks.add(releaseTask.replace("ReleasePkg", "Pkg"))
+        }
+
         _state.update {
             it.copy(
-                availableTasks = tasks,
-                selectedTask = tasks.first()
+                availableTasks = allTasks.distinct(),
+                selectedTask = allTasks.firstOrNull { t -> t.contains("Release") }
+                    ?: allTasks.first()
             )
         }
     }
@@ -213,6 +246,7 @@ class MacOsReleaseViewModel(
                 isProjectValid = it.isProjectValid
             )
         }
+        detectTasks(_state.value.projectRoot)
     }
 
     fun loadSigningIdentities() {
@@ -224,13 +258,7 @@ class MacOsReleaseViewModel(
             )
         }
         viewModelScope.launch {
-            processService.execute(
-                listOf(
-                    "security",
-                    "find-identity",
-                    "-v"
-                )
-            )
+            processService.execute(listOf("security", "find-identity", "-v"))
                 .collect { output ->
                     when (output) {
                         is ProcessOutput.Stdout -> {
@@ -268,12 +296,16 @@ class MacOsReleaseViewModel(
                             }
                         }
 
-                        is ProcessOutput.Complete -> {
-                            _state.update { it.copy(isLoadingIdentities = false) }
+                        is ProcessOutput.Complete -> _state.update {
+                            it.copy(
+                                isLoadingIdentities = false
+                            )
                         }
 
-                        is ProcessOutput.Error -> {
-                            _state.update { it.copy(isLoadingIdentities = false) }
+                        is ProcessOutput.Error -> _state.update {
+                            it.copy(
+                                isLoadingIdentities = false
+                            )
                         }
 
                         else -> {}
@@ -357,7 +389,6 @@ class MacOsReleaseViewModel(
                 )
             }
 
-            // 1. Build
             appendLog("Step 1/8: Starting build: ${_state.value.selectedTask}...")
             var buildExit = -1
             gradleService.runTask(
@@ -415,25 +446,37 @@ class MacOsReleaseViewModel(
         val identity = _state.value.selectedIdentity
         val installerIdentity = _state.value.selectedInstallerIdentity
 
-        // 2. Quarantine
-        appendLog("Step 2/8: Removing quarantine attributes...")
-        executeCommand(listOf("xattr", "-r", "-d", "com.apple.quarantine", "."))
-
-        // 3. Identify & Fix Bundle
-        appendLog("Step 3/8: Preparing app bundle...")
+        appendLog("Step 2/8: Locating app bundle...")
         val appPath = findAppBundle(root)
         if (appPath == null) {
+            val errorMsg =
+                "Could not locate .app bundle in any expected directory under $root"
+            val tip =
+                "\nTip: Ensure your project has 'packageName' configured in compose.desktop.nativeDistributions and the build task produced a .app bundle."
             _state.update {
                 it.copy(
                     isReleasing = false,
-                    releaseError = "Could not locate .app bundle"
+                    releaseError = errorMsg + tip
                 )
             }
             return
         }
         val appName =
             appPath.substringAfterLast("/").substringBeforeLast(".app")
+        appendLog("Found app bundle: $appPath")
 
+        appendLog("Step 3/8: Removing quarantine attributes from $appPath...")
+        executeCommand(
+            listOf(
+                "xattr",
+                "-r",
+                "-d",
+                "com.apple.quarantine",
+                appPath
+            )
+        )
+
+        appendLog("Adjusting Info.plist...")
         val infoPlist = "$appPath/Contents/Info.plist"
         executeCommand(
             listOf(
@@ -460,11 +503,12 @@ class MacOsReleaseViewModel(
             )
         )
 
-        // 4. Provisioning Profile
+        val subproject = appPath.removePrefix(root).substringBefore("/build/")
         val provProfile =
-            "$root/app/desktopApp/src/desktopMain/entitlements/app.provisionprofile"
+            "$root$subproject/src/desktopMain/entitlements/app.provisionprofile"
+
         if (fileSystemService.exists(provProfile)) {
-            appendLog("Step 4/8: Embedding provisioning profile...")
+            appendLog("Step 4/8: Embedding provisioning profile from $provProfile...")
             executeCommand(
                 listOf(
                     "cp",
@@ -474,12 +518,11 @@ class MacOsReleaseViewModel(
             )
         } else {
             appendLog(
-                "Step 4/8: Warning: Provisioning profile not found at $provProfile. Skipping.",
+                "Step 4/8: Warning: Provisioning profile not found at $provProfile. Skipping manual embed.",
                 LogType.Error
             )
         }
 
-        // 5. Deep Signing
         appendLog("Step 5/8: Deep signing subcomponents...")
         executeCommand(
             listOf(
@@ -511,12 +554,11 @@ class MacOsReleaseViewModel(
             )
         )
 
-        // 6. Sign jspawnhelper and main bundle
         appendLog("Step 6/8: Signing main executable...")
         val entitlementsPath =
-            "$root/app/desktopApp/src/desktopMain/entitlements/entitlements.plist"
+            "$root$subproject/src/desktopMain/entitlements/entitlements.plist"
         val childEntitlementsPath =
-            "$root/app/desktopApp/src/desktopMain/entitlements/child-entitlements.plist"
+            "$root$subproject/src/desktopMain/entitlements/child-entitlements.plist"
 
         val jspawnhelper =
             "$appPath/Contents/runtime/Contents/Home/lib/jspawnhelper"
@@ -585,7 +627,6 @@ class MacOsReleaseViewModel(
             )
         }
 
-        // 7. Verify and Package
         appendLog("Step 7/8: Verifying signature and packaging...")
         executeCommand(
             listOf(
@@ -598,15 +639,9 @@ class MacOsReleaseViewModel(
             )
         )
 
-        val pkgOutput =
-            "$root/build/compose/binaries/main-release/pkg/$appName-manual.pkg"
-        executeCommand(
-            listOf(
-                "mkdir",
-                "-p",
-                "$root/build/compose/binaries/main-release/pkg"
-            )
-        )
+        val pkgDir = appPath.substringBeforeLast("/app") + "/pkg"
+        val pkgOutput = "$pkgDir/$appName-manual.pkg"
+        executeCommand(listOf("mkdir", "-p", pkgDir))
         val pkgExit = executeCommand(
             listOf(
                 "productbuild",
@@ -629,7 +664,6 @@ class MacOsReleaseViewModel(
             return
         }
 
-        // 8. Upload
         appendLog("Step 8/8: Submitting to App Store...")
         val uploadExit = executeCommand(
             listOf(
@@ -687,9 +721,22 @@ class MacOsReleaseViewModel(
     }
 
     private fun findAppBundle(root: String): String? {
-        val buildDir = "$root/build/compose/binaries/main-release/app"
-        val files = fileSystemService.listFiles(buildDir)
-        return files.firstOrNull { it.endsWith(".app") }
+        val searchPaths = listOf(
+            "/build/compose/binaries/main-release/app",
+            "/composeApp/build/compose/binaries/main-release/app",
+            "/app/desktopApp/build/compose/binaries/main-release/app",
+            "/desktop/build/compose/binaries/main-release/app"
+        )
+
+        for (relPath in searchPaths) {
+            val buildDir = "$root$relPath"
+            if (fileSystemService.exists(buildDir)) {
+                val files = fileSystemService.listFiles(buildDir)
+                val app = files.firstOrNull { it.endsWith(".app") }
+                if (app != null) return app
+            }
+        }
+        return null
     }
 
     private fun appendLog(message: String, type: LogType = LogType.Info) {

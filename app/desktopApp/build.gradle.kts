@@ -21,7 +21,7 @@ compose.desktop {
         mainClass = "com.composeship.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Pkg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.composeship"
             packageVersion = "1.0.0"
         }

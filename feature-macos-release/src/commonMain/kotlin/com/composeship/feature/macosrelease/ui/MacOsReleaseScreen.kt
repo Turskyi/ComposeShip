@@ -6,43 +6,34 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composeship.core.ui.TechnicalGridBackground
 import composeship.core.generated.resources.*
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -189,14 +180,11 @@ fun TaskSelectionStep(
         Spacer(modifier = Modifier.height(16.dp))
 
         state.availableTasks.forEach { task ->
-            val isRelease = task == "packageReleasePkg"
-            val title =
-                if (isRelease) Res.string.task_release_title else Res.string.task_debug_title
-            val desc =
-                if (isRelease) Res.string.task_release_desc else Res.string.task_debug_desc
-
+            val isRelease = task.contains("Release", ignoreCase = true)
+            val descRes = if (isRelease) Res.string.task_release_desc else Res.string.task_debug_desc
+            
             Surface(
-                onClick = {
+                onClick = { 
                     viewModel.onTaskSelected(task)
                     if (!isRelease) showDebugWarning = true
                 },
@@ -210,7 +198,7 @@ fun TaskSelectionStep(
                 ) {
                     RadioButton(
                         selected = state.selectedTask == task,
-                        onClick = {
+                        onClick = { 
                             viewModel.onTaskSelected(task)
                             if (!isRelease) showDebugWarning = true
                         }
@@ -218,12 +206,12 @@ fun TaskSelectionStep(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = stringResource(title),
+                            text = task, // Show the actual task name
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (!isRelease && state.selectedTask == task) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = stringResource(desc),
+                            text = stringResource(descRes),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -233,7 +221,7 @@ fun TaskSelectionStep(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        if (showDebugWarning && state.selectedTask == "packagePkg") {
+        if (showDebugWarning && !state.selectedTask.contains("Release", ignoreCase = true)) {
             Text(
                 "⚠️ Warning: packagePkg is for local testing. Do not use for App Store submission.",
                 color = MaterialTheme.colorScheme.error,
@@ -628,6 +616,30 @@ fun ReleaseProcessStep(
     viewModel: MacOsReleaseViewModel
 ) {
     var showLogs by remember { mutableStateOf(true) }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    var autoScroll by remember { mutableStateOf(true) }
+    val clipboardManager = LocalClipboardManager.current
+
+    // Auto-scroll logic
+    LaunchedEffect(state.releaseLogs.size) {
+        if (autoScroll && state.releaseLogs.isNotEmpty()) {
+            listState.animateScrollToItem(state.releaseLogs.size - 1)
+        }
+    }
+
+    // Detect if user scrolls away from bottom
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress) {
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            if (lastVisibleItem != null) {
+                val isAtBottom = lastVisibleItem.index == state.releaseLogs.size - 1
+                if (!isAtBottom) {
+                    autoScroll = false
+                }
+            }
+        }
+    }
 
     Column {
         Text(
@@ -674,12 +686,31 @@ fun ReleaseProcessStep(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                stringResource(Res.string.logs),
-                style = MaterialTheme.typography.titleSmall
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(Res.string.logs),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                if (showLogs && state.releaseLogs.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = {
+                            val text = state.releaseLogs.joinToString("\n") { it.message }
+                            clipboardManager.setText(AnnotatedString(text))
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copy logs",
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
             TextButton(onClick = { showLogs = !showLogs }) {
                 Text(
                     if (showLogs) stringResource(Res.string.hide_details) else stringResource(
@@ -690,38 +721,85 @@ fun ReleaseProcessStep(
         }
 
         if (showLogs) {
-            LazyColumn(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .height(400.dp)
                     .background(
                         MaterialTheme.colorScheme.surfaceVariant.copy(
                             alpha = 0.3f
-                        )
+                        ),
+                        MaterialTheme.shapes.medium
                     )
                     .padding(8.dp)
             ) {
-                items(state.releaseLogs) { entry ->
-                    Text(
-                        text = entry.message,
-                        color = when (entry.type) {
-                            LogType.Info -> MaterialTheme.colorScheme.onSurface
-                            LogType.Error -> MaterialTheme.colorScheme.error
-                            // TODO: Consider moving to theme
-                            LogType.Success -> Color(0xFF4CAF50)
-                        },
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                SelectionContainer {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(state.releaseLogs) { entry ->
+                            Text(
+                                text = entry.message,
+                                color = when (entry.type) {
+                                    LogType.Info -> MaterialTheme.colorScheme.onSurface
+                                    LogType.Error -> MaterialTheme.colorScheme.error
+                                    LogType.Success -> Color(0xFF4CAF50)
+                                },
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+
+                // Scroll controls
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 16.dp, end = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (!autoScroll && state.releaseLogs.size > 10) {
+                        FloatingActionButton(
+                            onClick = {
+                                autoScroll = true
+                                scope.launch {
+                                    listState.animateScrollToItem(state.releaseLogs.size - 1)
+                                }
+                            },
+                            modifier = Modifier.size(40.dp),
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Icon(Icons.Default.KeyboardArrowDown, "Jump to bottom")
+                        }
+                    }
+                    val showJumpToTop by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
+                    if (showJumpToTop) {
+                        FloatingActionButton(
+                            onClick = {
+                                autoScroll = false
+                                scope.launch {
+                                    listState.animateScrollToItem(0)
+                                }
+                            },
+                            modifier = Modifier.size(40.dp),
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Icon(Icons.Default.KeyboardArrowUp, "Jump to top")
+                        }
+                    }
                 }
             }
         }
 
         state.releaseError?.let {
-            Text(
-                it,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+            SelectionContainer {
+                Text(
+                    it,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
         }
     }
 }
