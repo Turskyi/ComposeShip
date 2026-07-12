@@ -60,6 +60,7 @@ class MacOsReleaseViewModel(
             "$home/development"
         )
 
+        // Add first-level subdirectories of ~/development if they exist
         val devDir = "$home/development"
         if (fileSystemService.exists(devDir)) {
             try {
@@ -80,7 +81,7 @@ class MacOsReleaseViewModel(
                 }
             } catch (e: Exception) {
                 /* ignore */
-                println("Error listing files in $dir: ${e.message}")
+                println("Error accessing $dir: ${e.message}")
             }
         }
 
@@ -88,6 +89,7 @@ class MacOsReleaseViewModel(
             val fileList = detectedFiles.toList()
             _state.update { it.copy(detectedApiKeyFiles = fileList) }
 
+            // Autofill only if nothing was loaded from credentials storage
             if (fileList.size == 1 && _state.value.apiKeyPath.isEmpty()) {
                 val p8File = fileList.first()
                 val filename = p8File.substringAfterLast("/")
@@ -389,6 +391,7 @@ class MacOsReleaseViewModel(
                 )
             }
 
+            // 1. Build
             appendLog("Step 1/8: Starting build: ${_state.value.selectedTask}...")
             var buildExit = -1
             gradleService.runTask(
@@ -665,6 +668,27 @@ class MacOsReleaseViewModel(
         }
 
         appendLog("Step 8/8: Submitting to App Store...")
+        
+        // Fix: altool requires the key to be in specific locations.
+        val home = System.getProperty("user.home") ?: ""
+        val approvedLocations = listOf(
+            "$home/.appstoreconnect/private_keys",
+            "$home/private_keys",
+            "$home/.private_keys"
+        )
+        
+        val currentKeyPath = _state.value.apiKeyPath
+        val keyFilename = currentKeyPath.substringAfterLast("/")
+        val isApproved = approvedLocations.any { currentKeyPath.startsWith(it) }
+        
+        if (!isApproved) {
+            val targetDir = "$home/private_keys"
+            val targetPath = "$targetDir/$keyFilename"
+            appendLog("Copying API key to approved location: $targetPath")
+            executeCommand(listOf("mkdir", "-p", targetDir))
+            executeCommand(listOf("cp", currentKeyPath, targetPath))
+        }
+
         val uploadExit = executeCommand(
             listOf(
                 "xcrun",
@@ -690,10 +714,11 @@ class MacOsReleaseViewModel(
                 )
             }
         } else {
+            val errorMsg = "Upload failed. This usually means your API Key, Issuer ID, or Team ID is incorrect, or your account lacks permissions."
             _state.update {
                 it.copy(
                     isReleasing = false,
-                    releaseError = "Upload failed. Check logs for details."
+                    releaseError = errorMsg
                 )
             }
         }
