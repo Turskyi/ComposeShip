@@ -5,6 +5,8 @@
     <string name="project_root_label">Project Root Path</string>
     <string name="browse">Browse</string>
     <string name="next">Next</string>
+    <string name="back">Back</string>
+    <string name="start_over">Start Over</string>
     <string name="step_2_title">Step 2: Select Packaging Task</string>
     <string name="task_release_title">packageReleasePkg</string>
     <string name="task_release_desc">Release build - required for App Store submission</string>

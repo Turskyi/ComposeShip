@@ -139,6 +139,26 @@ class MacOsReleaseViewModel(
         _state.update { it.copy(step = next) }
     }
 
+    fun previousStep() {
+        val prev = when (_state.value.step) {
+            ReleaseStep.SelectProject -> ReleaseStep.SelectProject
+            ReleaseStep.SelectTask -> ReleaseStep.SelectProject
+            ReleaseStep.SigningIdentity -> ReleaseStep.SelectTask
+            ReleaseStep.AppStoreCredentials -> ReleaseStep.SigningIdentity
+            ReleaseStep.Process -> ReleaseStep.AppStoreCredentials
+        }
+        _state.update { it.copy(step = prev) }
+    }
+
+    fun startOver() {
+        _state.update { 
+            MacOsReleaseState(
+                projectRoot = it.projectRoot,
+                isProjectValid = it.isProjectValid
+            ) 
+        }
+    }
+
     fun loadSigningIdentities() {
         _state.update { 
             it.copy(

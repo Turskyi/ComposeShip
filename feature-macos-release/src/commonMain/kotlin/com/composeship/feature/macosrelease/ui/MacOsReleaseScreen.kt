@@ -24,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
@@ -45,6 +46,7 @@ import com.composeship.core.ui.TechnicalGridBackground
 import composeship.core.generated.resources.Res
 import composeship.core.generated.resources.api_key_path_label
 import composeship.core.generated.resources.app_identity_label
+import composeship.core.generated.resources.back
 import composeship.core.generated.resources.browse
 import composeship.core.generated.resources.hide_details
 import composeship.core.generated.resources.identity_app_store_desc
@@ -63,6 +65,7 @@ import composeship.core.generated.resources.project_root_label
 import composeship.core.generated.resources.refresh
 import composeship.core.generated.resources.released_successfully
 import composeship.core.generated.resources.show_details
+import composeship.core.generated.resources.start_over
 import composeship.core.generated.resources.start_release
 import composeship.core.generated.resources.step_1_title
 import composeship.core.generated.resources.step_2_title
@@ -263,8 +266,14 @@ fun TaskSelectionStep(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = { viewModel.nextStep() }) {
-            Text(stringResource(Res.string.next))
+        Row {
+            OutlinedButton(onClick = { viewModel.previousStep() }) {
+                Text(stringResource(Res.string.back))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = { viewModel.nextStep() }) {
+                Text(stringResource(Res.string.next))
+            }
         }
     }
 }
@@ -422,12 +431,18 @@ fun IdentitySelectionStep(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Button(
-            onClick = { viewModel.nextStep() },
-            enabled = state.selectedIdentity.isNotEmpty() &&
-                    state.selectedInstallerIdentity.isNotEmpty()
-        ) {
-            Text(stringResource(Res.string.next))
+        Row {
+            OutlinedButton(onClick = { viewModel.previousStep() }) {
+                Text(stringResource(Res.string.back))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = { viewModel.nextStep() },
+                enabled = state.selectedIdentity.isNotEmpty() &&
+                        state.selectedInstallerIdentity.isNotEmpty()
+            ) {
+                Text(stringResource(Res.string.next))
+            }
         }
     }
 }
@@ -485,8 +500,14 @@ fun CredentialsStep(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = { viewModel.nextStep() }) {
-            Text(stringResource(Res.string.next))
+        Row {
+            OutlinedButton(onClick = { viewModel.previousStep() }) {
+                Text(stringResource(Res.string.back))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = { viewModel.nextStep() }) {
+                Text(stringResource(Res.string.next))
+            }
         }
     }
 }
@@ -511,16 +532,32 @@ fun ReleaseProcessStep(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = { viewModel.startRelease() },
-            enabled = !state.isReleasing && !state.releaseSuccess
-        ) {
-            Text(
-                if (state.releaseSuccess)
-                    stringResource(Res.string.released_successfully)
-                else
-                    stringResource(Res.string.start_release),
-            )
+        Row {
+            if (!state.isReleasing && !state.releaseSuccess) {
+                OutlinedButton(onClick = { viewModel.previousStep() }) {
+                    Text(stringResource(Res.string.back))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            Button(
+                onClick = { viewModel.startRelease() },
+                enabled = !state.isReleasing && !state.releaseSuccess
+            ) {
+                Text(
+                    if (state.releaseSuccess)
+                        stringResource(Res.string.released_successfully)
+                    else
+                        stringResource(Res.string.start_release),
+                )
+            }
+
+            if (state.releaseSuccess || state.releaseError != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(onClick = { viewModel.startOver() }) {
+                    Text(stringResource(Res.string.start_over))
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
