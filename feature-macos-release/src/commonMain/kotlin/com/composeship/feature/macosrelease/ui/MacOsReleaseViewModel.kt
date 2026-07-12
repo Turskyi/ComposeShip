@@ -24,21 +24,85 @@ class MacOsReleaseViewModel(
     val state: StateFlow<MacOsReleaseState> = _state.asStateFlow()
 
     init {
-        loadSavedCredentials()
+        viewModelScope.launch {
+            loadSavedCredentials()
+            autoDetectApiKey()
+        }
     }
 
-    private fun loadSavedCredentials() {
-        viewModelScope.launch {
-            val issuerId =
-                credentialService.getCredential("appstore_issuer_id") ?: ""
-            val keyId = credentialService.getCredential("appstore_key_id") ?: ""
-            val keyPath =
-                credentialService.getCredential("appstore_key_path") ?: ""
-            _state.update {
-                it.copy(
-                    apiIssuerId = issuerId,
-                    apiKeyId = keyId,
-                    apiKeyPath = keyPath
+    private suspend fun loadSavedCredentials() {
+        val issuerId =
+            credentialService.getCredential("appstore_issuer_id") ?: ""
+        val keyId = credentialService.getCredential("appstore_key_id") ?: ""
+        val keyPath = credentialService.getCredential("appstore_key_path") ?: ""
+
+        _state.update {
+            it.copy(
+                apiIssuerId = issuerId,
+                apiKeyId = keyId,
+                apiKeyPath = keyPath
+            )
+        }
+        // Trigger validation for loaded credentials
+        onCredentialsChanged(issuerId, keyId, keyPath)
+    }
+
+    private fun autoDetectApiKey() {
+        val home = try {
+            System.getProperty("user.home")
+        } catch (e: Exception) {
+            println("Error getting user.home: ${e.message}")
+            null
+        } ?: return
+        val searchRoots = mutableListOf(
+            "$home/.appstoreconnect/private_keys",
+            "$home/private_keys",
+            "$home/Downloads",
+            "$home/development"
+        )
+
+        // Add first-level subdirectories of ~/development if they exist
+        val devDir = "$home/development"
+        if (fileSystemService.exists(devDir)) {
+            try {
+                val subDirs = fileSystemService.listFiles(devDir)
+                searchRoots.addAll(subDirs)
+            } catch (e: Exception) {
+                /* ignore */
+                println("Error getting subdirectories of $devDir: ${e.message}")
+            }
+        }
+
+        val detectedFiles = mutableSetOf<String>()
+        for (dir in searchRoots) {
+            try {
+                if (fileSystemService.exists(dir)) {
+                    val files = fileSystemService.listFiles(dir)
+                    detectedFiles.addAll(files.filter { it.endsWith(".p8") })
+                }
+            } catch (e: Exception) {
+                /* ignore */
+                println("Error accessing $dir: ${e.message}")
+            }
+        }
+
+        if (detectedFiles.isNotEmpty()) {
+            val fileList = detectedFiles.toList()
+            _state.update { it.copy(detectedApiKeyFiles = fileList) }
+
+            // Autofill only if nothing was loaded from credentials storage
+            if (fileList.size == 1 && _state.value.apiKeyPath.isEmpty()) {
+                val p8File = fileList.first()
+                val filename = p8File.substringAfterLast("/")
+                val keyIdMatch =
+                    Regex("AuthKey_([A-Z0-9]{10})\\.p8").find(filename)
+                val detectedKeyId =
+                    keyIdMatch?.groupValues?.get(1) ?: _state.value.apiKeyId
+
+                onCredentialsChanged(
+                    _state.value.apiIssuerId,
+                    detectedKeyId,
+                    p8File
                 )
             }
         }
@@ -82,12 +146,6 @@ class MacOsReleaseViewModel(
             return
         }
 
-        // Deep check for Compose Desktop
-        // In a real app, we'd parse build files, but for now we'll check for common indicators
-        // or just trust the user if basic Gradle files exist.
-        // The user wants: "check for... the Compose desktop Gradle plugin, and a compose.desktop { } block"
-
-        // Let's assume for now that if it has gradlew, it's a good start.
         val gradlewExists = fileSystemService.exists("$path/gradlew")
         if (!gradlewExists) {
             _state.update {
@@ -109,8 +167,6 @@ class MacOsReleaseViewModel(
     }
 
     private fun detectTasks() {
-        // For now, we'll suggest common package tasks
-        // In a real implementation, we could run `./gradlew tasks`
         val tasks = listOf("packageReleasePkg", "packagePkg")
         _state.update {
             it.copy(
@@ -151,21 +207,21 @@ class MacOsReleaseViewModel(
     }
 
     fun startOver() {
-        _state.update { 
+        _state.update {
             MacOsReleaseState(
                 projectRoot = it.projectRoot,
                 isProjectValid = it.isProjectValid
-            ) 
+            )
         }
     }
 
     fun loadSigningIdentities() {
-        _state.update { 
+        _state.update {
             it.copy(
-                signingIdentities = emptyList(), 
+                signingIdentities = emptyList(),
                 installerIdentities = emptyList(),
                 isLoadingIdentities = true
-            ) 
+            )
         }
         viewModelScope.launch {
             processService.execute(
@@ -184,16 +240,21 @@ class MacOsReleaseViewModel(
                                     if (identity.contains("Application")) {
                                         val newIdentities =
                                             s.signingIdentities + identity
-                                        // Prefer "3rd Party Mac Developer Application" over "Developer ID"
                                         val currentSelected = s.selectedIdentity
-                                        val shouldUpdateSelection = currentSelected.isEmpty() ||
-                                                (currentSelected.contains("Developer ID") && identity.contains("3rd Party Mac Developer"))
-                                        
+                                        val shouldUpdateSelection =
+                                            currentSelected.isEmpty() ||
+                                                    (currentSelected.contains("Developer ID") && identity.contains(
+                                                        "3rd Party Mac Developer"
+                                                    ))
+
                                         s.copy(
                                             signingIdentities = newIdentities,
                                             selectedIdentity = if (shouldUpdateSelection) identity else currentSelected
                                         )
-                                    } else if (identity.contains("Installer") || identity.contains("Distribution")) {
+                                    } else if (identity.contains("Installer") || identity.contains(
+                                            "Distribution"
+                                        )
+                                    ) {
                                         val newIdentities =
                                             s.installerIdentities + identity
                                         s.copy(
@@ -206,12 +267,15 @@ class MacOsReleaseViewModel(
                                 }
                             }
                         }
+
                         is ProcessOutput.Complete -> {
                             _state.update { it.copy(isLoadingIdentities = false) }
                         }
+
                         is ProcessOutput.Error -> {
                             _state.update { it.copy(isLoadingIdentities = false) }
                         }
+
                         else -> {}
                     }
                 }
@@ -223,7 +287,6 @@ class MacOsReleaseViewModel(
     }
 
     private fun parseIdentity(line: String): String? {
-        // Example: 1) 26QZ8BPZFL "3rd Party Mac Developer Application: DMYTRO TURSKYI (26QZ8BPZFL)"
         val regex = Regex("\\d+\\)\\s+[A-Z0-9]+\\s+\"(.+)\"")
         return regex.find(line)?.groupValues?.get(1)
     }
@@ -233,12 +296,39 @@ class MacOsReleaseViewModel(
     }
 
     fun onCredentialsChanged(issuerId: String, keyId: String, keyPath: String) {
+        val uuidRegex =
+            Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+        val keyIdRegex = Regex("^[A-Z0-9]{10}$")
+
         _state.update {
             it.copy(
                 apiIssuerId = issuerId,
+                isIssuerIdValid = issuerId.isEmpty() || uuidRegex.matches(
+                    issuerId
+                ),
                 apiKeyId = keyId,
+                isKeyIdValid = keyId.isEmpty() || keyIdRegex.matches(keyId),
                 apiKeyPath = keyPath
             )
+        }
+    }
+
+    fun onBrowseApiKey() {
+        viewModelScope.launch {
+            val path = fileSystemService.pickFile("p8")
+            if (path != null) {
+                val filename = path.substringAfterLast("/")
+                val keyIdMatch =
+                    Regex("AuthKey_([A-Z0-9]{10})\\.p8").find(filename)
+                val detectedKeyId =
+                    keyIdMatch?.groupValues?.get(1) ?: _state.value.apiKeyId
+
+                onCredentialsChanged(
+                    _state.value.apiIssuerId,
+                    detectedKeyId,
+                    path
+                )
+            }
         }
     }
 
@@ -344,7 +434,6 @@ class MacOsReleaseViewModel(
         val appName =
             appPath.substringAfterLast("/").substringBeforeLast(".app")
 
-        // Plist adjustments
         val infoPlist = "$appPath/Contents/Info.plist"
         executeCommand(
             listOf(
@@ -432,37 +521,21 @@ class MacOsReleaseViewModel(
         val jspawnhelper =
             "$appPath/Contents/runtime/Contents/Home/lib/jspawnhelper"
         if (fileSystemService.exists(jspawnhelper)) {
+            val cmd = mutableListOf(
+                "codesign",
+                "-s",
+                identity,
+                "-vvvv",
+                "--timestamp",
+                "--options",
+                "runtime",
+                "--force"
+            )
             if (fileSystemService.exists(childEntitlementsPath)) {
-                executeCommand(
-                    listOf(
-                        "codesign",
-                        "-s",
-                        identity,
-                        "-vvvv",
-                        "--timestamp",
-                        "--options",
-                        "runtime",
-                        "--entitlements",
-                        childEntitlementsPath,
-                        "--force",
-                        jspawnhelper
-                    )
-                )
-            } else {
-                executeCommand(
-                    listOf(
-                        "codesign",
-                        "-s",
-                        identity,
-                        "-vvvv",
-                        "--timestamp",
-                        "--options",
-                        "runtime",
-                        "--force",
-                        jspawnhelper
-                    )
-                )
+                cmd.addAll(listOf("--entitlements", childEntitlementsPath))
             }
+            cmd.add(jspawnhelper)
+            executeCommand(cmd)
         }
 
         if (fileSystemService.exists(entitlementsPath)) {
@@ -560,11 +633,17 @@ class MacOsReleaseViewModel(
         appendLog("Step 8/8: Submitting to App Store...")
         val uploadExit = executeCommand(
             listOf(
-                "xcrun", "altool", "--upload-app",
-                "-f", pkgOutput,
-                "-t", "macos",
-                "--apiKey", _state.value.apiKeyId,
-                "--apiIssuer", _state.value.apiIssuerId
+                "xcrun",
+                "altool",
+                "--upload-app",
+                "-f",
+                pkgOutput,
+                "-t",
+                "macos",
+                "--apiKey",
+                _state.value.apiKeyId,
+                "--apiIssuer",
+                _state.value.apiIssuerId
             )
         )
 
@@ -616,10 +695,7 @@ class MacOsReleaseViewModel(
     private fun appendLog(message: String, type: LogType = LogType.Info) {
         _state.update {
             it.copy(
-                releaseLogs = it.releaseLogs + LogEntry(
-                    message,
-                    type
-                )
+                releaseLogs = it.releaseLogs + LogEntry(message, type)
             )
         }
     }

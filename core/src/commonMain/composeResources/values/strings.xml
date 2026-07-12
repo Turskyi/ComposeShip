@@ -26,6 +26,12 @@
     <string name="issuer_id_label">Issuer ID</string>
     <string name="key_id_label">Key ID</string>
     <string name="api_key_path_label">API Key (.p8) Path</string>
+    <string name="issuer_id_help">These values cannot be fetched programmatically because they are the credentials used to authenticate with Apple. \n\nGo to the link below and select the "Team Keys" tab (recommended as they work across your whole account). Look for the field labelled "Issuer ID" near the top - it's a UUID like 48e54131-..., and there's a "Copy" button next to it.</string>
+    <string name="key_id_help">Check the "Active" keys table under the "Team Keys" tab first. If you already have a key from a previous project (with Admin or App Manager access), you can reuse its 10-character "Key ID" here. \n\nIf you have no active keys: click the "+" next to "Active", give it a name, choose "Admin" or "App Manager" access, then download the .p8 file immediately (Apple only allows one download ever).</string>
+    <string name="api_key_path_help">The .p8 file you downloaded when the key was created. ComposeShip will try to find this automatically. If it doesn't, common locations are ~/private_keys/ or wherever you saved it - search your system for files ending in .p8 if unsure. If you\'ve lost it, you will need to revoke the old key and create a new one.</string>
+    <string name="api_key_link_text">Open App Store Connect API Page</string>
+    <string name="error_invalid_issuer_id">Must be a valid UUID</string>
+    <string name="error_invalid_key_id">Must be a 10-character alphanumeric ID</string>
     <string name="step_5_title">Step 5: Release Process</string>
     <string name="start_release">Start Build &amp; Release</string>
     <string name="released_successfully">Released Successfully</string>

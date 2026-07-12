@@ -9,27 +9,25 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,42 +38,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composeship.core.ui.TechnicalGridBackground
-import composeship.core.generated.resources.Res
-import composeship.core.generated.resources.api_key_path_label
-import composeship.core.generated.resources.app_identity_label
-import composeship.core.generated.resources.back
-import composeship.core.generated.resources.browse
-import composeship.core.generated.resources.hide_details
-import composeship.core.generated.resources.identity_app_store_desc
-import composeship.core.generated.resources.identity_developer_id_desc
-import composeship.core.generated.resources.installer_identity_explanation
-import composeship.core.generated.resources.installer_identity_label
-import composeship.core.generated.resources.issuer_id_label
-import composeship.core.generated.resources.key_id_label
-import composeship.core.generated.resources.logs
-import composeship.core.generated.resources.macos_release_title
-import composeship.core.generated.resources.next
-import composeship.core.generated.resources.no_app_identities
-import composeship.core.generated.resources.no_installer_identities
-import composeship.core.generated.resources.open_apple_developer
-import composeship.core.generated.resources.project_root_label
-import composeship.core.generated.resources.refresh
-import composeship.core.generated.resources.released_successfully
-import composeship.core.generated.resources.show_details
-import composeship.core.generated.resources.start_over
-import composeship.core.generated.resources.start_release
-import composeship.core.generated.resources.step_1_title
-import composeship.core.generated.resources.step_2_title
-import composeship.core.generated.resources.step_3_title
-import composeship.core.generated.resources.step_4_title
-import composeship.core.generated.resources.step_5_title
-import composeship.core.generated.resources.task_debug_desc
-import composeship.core.generated.resources.task_debug_title
-import composeship.core.generated.resources.task_release_desc
-import composeship.core.generated.resources.task_release_title
+import composeship.core.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -105,11 +72,22 @@ fun MacOsReleaseScreen(
                     )
         ) {
             Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-                Text(
-                    text = stringResource(Res.string.macos_release_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (state.step != ReleaseStep.SelectProject && !state.isReleasing) {
+                        IconButton(onClick = { viewModel.previousStep() }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                    Text(
+                        text = stringResource(Res.string.macos_release_title),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 AnimatedContent(
@@ -303,13 +281,17 @@ fun IdentitySelectionStep(
         }
         Spacer(modifier = Modifier.height(16.dp))
 
+        if (state.isLoadingIdentities) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+            )
+        }
+
         Text(
             stringResource(Res.string.app_identity_label),
             style = MaterialTheme.typography.titleSmall
         )
-        if (state.isLoadingIdentities) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
-        } else if (state.signingIdentities.isEmpty()) {
+        if (state.signingIdentities.isEmpty() && !state.isLoadingIdentities) {
             Text(
                 stringResource(Res.string.no_app_identities),
                 color = MaterialTheme.colorScheme.error,
@@ -367,9 +349,7 @@ fun IdentitySelectionStep(
             stringResource(Res.string.installer_identity_label),
             style = MaterialTheme.typography.titleSmall
         )
-        if (state.isLoadingIdentities) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
-        } else if (state.installerIdentities.isEmpty()) {
+        if (state.installerIdentities.isEmpty() && !state.isLoadingIdentities) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -416,7 +396,9 @@ fun IdentitySelectionStep(
                         RadioButton(
                             selected = state.selectedInstallerIdentity == identity,
                             onClick = {
-                                viewModel.onInstallerIdentitySelected(identity)
+                                viewModel.onInstallerIdentitySelected(
+                                    identity
+                                )
                             }
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -447,19 +429,23 @@ fun IdentitySelectionStep(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CredentialsStep(
     state: MacOsReleaseState,
     viewModel: MacOsReleaseViewModel
 ) {
+    val uriHandler = LocalUriHandler.current
+    val apiPageUrl = "https://appstoreconnect.apple.com/access/integrations/api"
+
     Column {
         Text(
             stringResource(Res.string.step_4_title),
             style = MaterialTheme.typography.titleMedium
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
+        CredentialField(
             value = state.apiIssuerId,
             onValueChange = {
                 viewModel.onCredentialsChanged(
@@ -468,11 +454,15 @@ fun CredentialsStep(
                     state.apiKeyPath
                 )
             },
-            label = { Text(stringResource(Res.string.issuer_id_label)) },
-            modifier = Modifier.fillMaxWidth()
+            label = stringResource(Res.string.issuer_id_label),
+            helpText = stringResource(Res.string.issuer_id_help),
+            isError = !state.isIssuerIdValid,
+            errorText = stringResource(Res.string.error_invalid_issuer_id),
+            onActionClick = { uriHandler.openUri(apiPageUrl) },
+            actionLabel = stringResource(Res.string.api_key_link_text)
         )
 
-        OutlinedTextField(
+        CredentialField(
             value = state.apiKeyId,
             onValueChange = {
                 viewModel.onCredentialsChanged(
@@ -481,22 +471,76 @@ fun CredentialsStep(
                     state.apiKeyPath
                 )
             },
-            label = { Text(stringResource(Res.string.key_id_label)) },
-            modifier = Modifier.fillMaxWidth()
+            label = stringResource(Res.string.key_id_label),
+            helpText = stringResource(Res.string.key_id_help),
+            isError = !state.isKeyIdValid,
+            errorText = stringResource(Res.string.error_invalid_key_id),
+            onActionClick = { uriHandler.openUri(apiPageUrl) },
+            actionLabel = stringResource(Res.string.api_key_link_text)
         )
 
-        OutlinedTextField(
-            value = state.apiKeyPath,
-            onValueChange = {
-                viewModel.onCredentialsChanged(
-                    state.apiIssuerId,
-                    state.apiKeyId,
-                    it
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                CredentialField(
+                    value = state.apiKeyPath,
+                    onValueChange = {
+                        viewModel.onCredentialsChanged(
+                            state.apiIssuerId,
+                            state.apiKeyId,
+                            it
+                        )
+                    },
+                    label = stringResource(Res.string.api_key_path_label),
+                    helpText = stringResource(Res.string.api_key_path_help),
+                    isError = false,
+                    errorText = ""
                 )
-            },
-            label = { Text(stringResource(Res.string.api_key_path_label)) },
-            modifier = Modifier.fillMaxWidth()
-        )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = { viewModel.onBrowseApiKey() },
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text(stringResource(Res.string.browse))
+            }
+        }
+
+        if (state.detectedApiKeyFiles.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = if (state.detectedApiKeyFiles.size == 1) "Auto-detected key:" else "Multiple keys found — select one to fill fields:",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                state.detectedApiKeyFiles.forEach { path ->
+                    val filename = path.substringAfterLast("/")
+                    FilterChip(
+                        selected = state.apiKeyPath == path,
+                        onClick = {
+                            val keyIdMatch = Regex("AuthKey_([A-Z0-9]{10})\\.p8").find(filename)
+                            val detectedKeyId = keyIdMatch?.groupValues?.get(1) ?: state.apiKeyId
+                            viewModel.onCredentialsChanged(state.apiIssuerId, detectedKeyId, path)
+                        },
+                        label = { Text(filename, style = MaterialTheme.typography.labelSmall) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Key,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -507,6 +551,72 @@ fun CredentialsStep(
             Spacer(modifier = Modifier.width(8.dp))
             Button(onClick = { viewModel.nextStep() }) {
                 Text(stringResource(Res.string.next))
+            }
+        }
+    }
+}
+
+@Composable
+fun CredentialField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    helpText: String,
+    isError: Boolean,
+    errorText: String,
+    onActionClick: (() -> Unit)? = null,
+    actionLabel: String? = null
+) {
+    var showHelp by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                label = { Text(label) },
+                modifier = Modifier.weight(1f),
+                isError = isError,
+                supportingText = {
+                    if (isError) Text(errorText)
+                }
+            )
+            IconButton(onClick = { showHelp = !showHelp }) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                    contentDescription = "Help",
+                    tint = if (showHelp) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        if (showHelp) {
+            Surface(
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.padding(top = 4.dp, end = 48.dp)
+            ) {
+                Column(modifier = Modifier.padding(8.dp)) {
+                    Text(
+                        text = helpText,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    if (onActionClick != null && actionLabel != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(
+                            onClick = onActionClick,
+                            contentPadding = PaddingValues(
+                                vertical = 0.dp,
+                                horizontal = 8.dp
+                            )
+                        ) {
+                            Text(
+                                text = actionLabel,
+                                style = MaterialTheme.typography.labelMedium,
+                                textDecoration = TextDecoration.Underline
+                            )
+                        }
+                    }
+                }
             }
         }
     }

@@ -19,6 +19,12 @@
     <string name="issuer_id_label">ID видавця (Issuer ID)</string>
     <string name="key_id_label">ID ключа (Key ID)</string>
     <string name="api_key_path_label">Шлях до API ключа (.p8)</string>
+    <string name="issuer_id_help">Ці значення неможливо отримати програмно, оскільки вони самі є обліковими даними для автентифікації в Apple. \n\nПерейдіть за посиланням нижче та виберіть вкладку \"Team Keys\" (рекомендовано, оскільки вони діють для всього вашого акаунта). Знайдіть поле з назвою \"Issuer ID\" зверху — це UUID накшталт 48e54131-..., поруч є кнопка \"Copy\".</string>
+    <string name="key_id_help">Спочатку перевірте таблицю \"Active\" ключів на вкладці \"Team Keys\". Якщо у вас уже є ключ від попереднього проекту (з доступом Admin або App Manager), ви можете використати його 10-символьний \"Key ID\" тут. \n\nЯкщо у вас немає активних ключів: натисніть \"+\" поруч із \"Active\", введіть назву, виберіть доступ \"Admin\" або \"App Manager\", а потім негайно завантажте файл .p8 (Apple дозволяє завантажити його лише один раз).</string>
+    <string name="api_key_path_help">Файл .p8, який ви завантажили при створенні ключа. Якщо ви його втратили, вам доведеться анулювати старий ключ і створити новий, оскільки Apple не дозволяє повторно завантажувати існуючі ключі.</string>
+    <string name="api_key_link_text">Відкрити сторінку App Store Connect API</string>
+    <string name="error_invalid_issuer_id">Має бути валідним UUID</string>
+    <string name="error_invalid_key_id">Має бути 10-символьним ідентифікатором</string>
     <string name="step_5_title">Крок 5: Процес випуску</string>
     <string name="start_release">Почати збірку та випуск</string>
     <string name="released_successfully">Випущено успішно</string>

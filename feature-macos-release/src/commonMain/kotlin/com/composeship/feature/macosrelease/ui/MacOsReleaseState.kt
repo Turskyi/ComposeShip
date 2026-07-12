@@ -20,8 +20,11 @@ data class MacOsReleaseState(
     val isLoadingIdentities: Boolean = false,
     
     val apiIssuerId: String = "",
+    val isIssuerIdValid: Boolean = true,
     val apiKeyId: String = "",
+    val isKeyIdValid: Boolean = true,
     val apiKeyPath: String = "",
+    val detectedApiKeyFiles: List<String> = emptyList(),
     
     val releaseLogs: List<LogEntry> = emptyList(),
     val isReleasing: Boolean = false,
