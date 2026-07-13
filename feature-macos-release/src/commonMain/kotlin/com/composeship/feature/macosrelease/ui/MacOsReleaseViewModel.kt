@@ -483,12 +483,49 @@ class MacOsReleaseViewModel(
         )
     }
 
+    private suspend fun regenerateIcons(root: String): Boolean {
+        // Try common icon locations
+        val iconPaths = listOf(
+            "$root/app/desktopApp/src/main/resources/icon.png",
+            "$root/composeApp/src/desktopMain/resources/icon.png",
+            "$root/src/main/resources/icon.png"
+        )
+        
+        val iconPng = iconPaths.firstOrNull { fileSystemService.exists(it) }
+        
+        if (iconPng == null) {
+            appendLog("Warning: No icon.png found in common paths. Skipping icon regeneration.", LogType.Error)
+            return true
+        }
+
+        appendLog("Regenerating icon.icns from $iconPng...")
+        val resourcesDir = iconPng.substringBeforeLast("/")
+        val iconsetDir = "$resourcesDir/icon.iconset"
+        executeCommand(listOf("mkdir", "-p", iconsetDir))
+
+        val sizes = listOf(16, 32, 128, 256, 512)
+        for (size in sizes) {
+            executeCommand(listOf("sips", "-z", "$size", "$size", iconPng, "--out", "$iconsetDir/icon_${size}x$size.png"))
+            val doubleSize = size * 2
+            executeCommand(listOf("sips", "-z", "$doubleSize", "$doubleSize", iconPng, "--out", "$iconsetDir/icon_${size}x$size@2x.png"))
+        }
+
+        val exitCode = executeCommand(listOf("iconutil", "-c", "icns", iconsetDir, "-o", "$resourcesDir/icon.icns"))
+        executeCommand(listOf("rm", "-rf", iconsetDir))
+        
+        return exitCode == 0
+    }
+
     private suspend fun proceedToReleaseFlow() {
         val root = _state.value.projectRoot
         val identity = _state.value.selectedIdentity
         val installerIdentity = _state.value.selectedInstallerIdentity
 
-        appendLog("Step 2/8: Locating app bundle...")
+        // 1. Icon Regeneration
+        appendLog("Step 1/9: Regenerating icons...")
+        regenerateIcons(root)
+
+        appendLog("Step 2/9: Locating app bundle...")
         val appPath = findAppBundle(root)
         if (appPath == null) {
             val errorMsg =
@@ -544,6 +581,12 @@ class MacOsReleaseViewModel(
                 infoPlist
             )
         )
+        
+        // Ensure icon is referenced correctly
+        executeCommand(listOf("/usr/libexec/PlistBuddy", "-c", "Set :CFBundleIconFile icon.icns", infoPlist))
+        if (executeCommand(listOf("/usr/libexec/PlistBuddy", "-c", "Print :CFBundleIconFile", infoPlist)) != 0) {
+            executeCommand(listOf("/usr/libexec/PlistBuddy", "-c", "Add :CFBundleIconFile string icon.icns", infoPlist))
+        }
 
         // Fix: Apply selected category
         appendLog("Setting application category: ${_state.value.selectedCategory}")
