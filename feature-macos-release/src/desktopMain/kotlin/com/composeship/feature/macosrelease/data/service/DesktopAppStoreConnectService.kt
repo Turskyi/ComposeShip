@@ -3,18 +3,21 @@ package com.composeship.feature.macosrelease.data.service
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.composeship.feature.macosrelease.domain.service.AppStoreConnectService
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.security.KeyFactory
 import java.security.interfaces.ECPrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
-import java.util.*
+import java.util.Base64
+import java.util.Date
 
 class DesktopAppStoreConnectService : AppStoreConnectService {
     
@@ -30,12 +33,22 @@ class DesktopAppStoreConnectService : AppStoreConnectService {
         try {
             val token = generateJwt(issuerId, keyId, keyPath)
             
-            val response: AppResponse = client.get("https://api.appstoreconnect.apple.com/v1/apps") {
+            val response = client.get("https://api.appstoreconnect.apple.com/v1/apps") {
                 header("Authorization", "Bearer $token")
                 parameter("filter[bundleId]", bundleId)
-            }.body()
+            }
             
-            return response.data.firstOrNull()?.id
+            val responseBody = response.body<String>()
+            println("App Store Connect API Request: ${response.call.request.url}")
+            println("App Store Connect API Status: ${response.status}")
+            println("App Store Connect API Response: $responseBody")
+
+            if (response.status.value in 200..299) {
+                val appResponse = Json { ignoreUnknownKeys = true }.decodeFromString<AppResponse>(responseBody)
+                return appResponse.data.firstOrNull()?.id
+            } else {
+                return null
+            }
         } catch (e: Exception) {
             println("Error finding App ID: ${e.message}")
             return null
