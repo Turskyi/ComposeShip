@@ -45,8 +45,13 @@ class DesktopAppStoreConnectService : AppStoreConnectService {
 
             if (response.status.value in 200..299) {
                 val appResponse = Json { ignoreUnknownKeys = true }.decodeFromString<AppResponse>(responseBody)
-                return appResponse.data.firstOrNull()?.id
+                val appId = appResponse.data.firstOrNull()?.id
+                if (appId == null) {
+                    println("App Store Connect API: No app found for bundle ID $bundleId. Response: $responseBody")
+                }
+                return appId
             } else {
+                println("App Store Connect API Error: ${response.status} - $responseBody")
                 return null
             }
         } catch (e: Exception) {
@@ -72,7 +77,8 @@ class DesktopAppStoreConnectService : AppStoreConnectService {
             .withIssuer(issuerId)
             .withKeyId(keyId)
             .withAudience("appstoreconnect-v1")
-            .withExpiresAt(Date(System.currentTimeMillis() + 20 * 60 * 1000)) // 20 mins
+            .withIssuedAt(Date())
+            .withExpiresAt(Date(System.currentTimeMillis() + 15 * 60 * 1000)) // 15 mins
             .sign(algorithm)
     }
 

@@ -957,25 +957,27 @@ class MacOsReleaseViewModel(
 
                 is ProcessOutput.Complete -> {
                     if (output.exitCode == 0) {
-                        appendLog(
-                            "All steps completed successfully!",
-                            LogType.Success
-                        )
+                        appendLog("All steps completed successfully!", LogType.Success)
                         _state.update { it.copy(releaseSuccess = true) }
 
+                        // Try to find App Store ID
                         val bundleId = getBundleId(appPath)
                         if (bundleId != null) {
+                            appendLog("Resolving App Store ID for bundle: $bundleId...")
                             val appId = appStoreConnectService.findAppId(
                                 bundleId,
                                 _state.value.apiIssuerId,
                                 _state.value.apiKeyId,
                                 _state.value.apiKeyPath
                             )
-                            if (appId != null) _state.update {
-                                it.copy(
-                                    appStoreId = appId
-                                )
+                            if (appId != null) {
+                                appendLog("Resolved App Store ID: $appId", LogType.Success)
+                                _state.update { it.copy(appStoreId = appId) }
+                            } else {
+                                appendLog("Could not resolve App Store ID for bundle: $bundleId. Check API logs if possible.", LogType.Error)
                             }
+                        } else {
+                            appendLog("Could not determine bundle ID from Info.plist", LogType.Error)
                         }
                         _state.update { it.copy(isReleasing = false) }
                     } else {
