@@ -33,3 +33,4 @@ secrets.properties
 credentials.json
 *.asc
 
+.artifacts

@@ -965,10 +965,11 @@ class MacOsReleaseViewModel(
                         if (bundleId != null) {
                             appendLog("Resolving App Store ID for bundle: $bundleId...")
                             val appId = appStoreConnectService.findAppId(
-                                bundleId,
-                                _state.value.apiIssuerId,
-                                _state.value.apiKeyId,
-                                _state.value.apiKeyPath
+                                bundleId = bundleId,
+                                issuerId = _state.value.apiIssuerId,
+                                keyId = _state.value.apiKeyId,
+                                keyPath = _state.value.apiKeyPath,
+                                onLog = { appendLog(it, LogType.Info) }
                             )
                             if (appId != null) {
                                 appendLog("Resolved App Store ID: $appId", LogType.Success)

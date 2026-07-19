@@ -29,7 +29,13 @@ class DesktopAppStoreConnectService : AppStoreConnectService {
         }
     }
 
-    override suspend fun findAppId(bundleId: String, issuerId: String, keyId: String, keyPath: String): String? {
+    override suspend fun findAppId(
+        bundleId: String,
+        issuerId: String,
+        keyId: String,
+        keyPath: String,
+        onLog: (String) -> Unit
+    ): String? {
         try {
             val token = generateJwt(issuerId, keyId, keyPath)
             
@@ -39,23 +45,23 @@ class DesktopAppStoreConnectService : AppStoreConnectService {
             }
             
             val responseBody = response.body<String>()
-            println("App Store Connect API Request: ${response.call.request.url}")
-            println("App Store Connect API Status: ${response.status}")
-            println("App Store Connect API Response: $responseBody")
+            onLog("App Store Connect API Request: ${response.call.request.url}")
+            onLog("App Store Connect API Status: ${response.status}")
+            onLog("App Store Connect API Response: $responseBody")
 
             if (response.status.value in 200..299) {
                 val appResponse = Json { ignoreUnknownKeys = true }.decodeFromString<AppResponse>(responseBody)
                 val appId = appResponse.data.firstOrNull()?.id
                 if (appId == null) {
-                    println("App Store Connect API: No app found for bundle ID $bundleId. Response: $responseBody")
+                    onLog("App Store Connect API: No app found for bundle ID $bundleId.")
                 }
                 return appId
             } else {
-                println("App Store Connect API Error: ${response.status} - $responseBody")
+                onLog("App Store Connect API Error: ${response.status} - $responseBody")
                 return null
             }
         } catch (e: Exception) {
-            println("Error finding App ID: ${e.message}")
+            onLog("Error finding App ID: ${e.message}")
             return null
         }
     }
