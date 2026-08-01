@@ -689,17 +689,6 @@ class MacOsReleaseViewModel(
             }
         }
 
-        appendLog("Step 5/10: Removing quarantine attributes from $appPath...")
-        executeCommand(
-            listOf(
-                "xattr",
-                "-r",
-                "-d",
-                "com.apple.quarantine",
-                appPath
-            )
-        )
-
         appendLog("Adjusting Info.plist...")
         executeCommand(
             listOf(
@@ -752,6 +741,15 @@ class MacOsReleaseViewModel(
             "$root$subproject/src/desktopMain/entitlements/app.provisionprofile"
 
         if (fileSystemService.exists(provProfile)) {
+            appendLog("Cleaning quarantine from source profile $provProfile...")
+            executeCommand(
+                listOf(
+                    "xattr",
+                    "-d",
+                    "com.apple.quarantine",
+                    provProfile
+                )
+            )
             appendLog("Step 6/10: Embedding provisioning profile from $provProfile...")
             executeCommand(
                 listOf(
@@ -761,6 +759,17 @@ class MacOsReleaseViewModel(
                 )
             )
         }
+
+        appendLog("Step 5/10: Removing quarantine attributes from $appPath...")
+        executeCommand(
+            listOf(
+                "xattr",
+                "-r",
+                "-d",
+                "com.apple.quarantine",
+                appPath
+            )
+        )
 
         appendLog("Step 7/10: Deep signing subcomponents...")
         executeCommand(
