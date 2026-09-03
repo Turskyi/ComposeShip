@@ -38,6 +38,7 @@ import com.composeship.MainViewModel
 import com.composeship.core.domain.model.Feature
 import com.composeship.core.theme.ComposeShipTheme
 import com.composeship.core.theme.ThemeMode
+import com.composeship.getPlatform
 import composeship.core.generated.resources.Res
 import composeship.core.generated.resources.app_name
 import org.jetbrains.compose.resources.stringResource
@@ -51,6 +52,7 @@ fun MainScaffold(
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val selectedLanguageCode by viewModel.selectedLanguageCode.collectAsStateWithLifecycle()
     val currentFeature by viewModel.currentFeature.collectAsStateWithLifecycle()
+    val platform = remember { getPlatform() }
 
     ComposeShipTheme(themeMode = themeMode) {
         Scaffold(
@@ -72,17 +74,19 @@ fun MainScaffold(
         ) { paddingValues ->
             Row(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
                 NavigationRail {
-                    NavigationRailItem(
-                        selected = currentFeature == Feature.MACOS_RELEASE,
-                        onClick = { viewModel.selectFeature(Feature.MACOS_RELEASE) },
-                        icon = {
-                            Icon(
-                                Icons.Default.Laptop,
-                                contentDescription = null
-                            )
-                        },
-                        label = { Text("macOS") }
-                    )
+                    if (platform.isMac) {
+                        NavigationRailItem(
+                            selected = currentFeature == Feature.MACOS_RELEASE,
+                            onClick = { viewModel.selectFeature(Feature.MACOS_RELEASE) },
+                            icon = {
+                                Icon(
+                                    Icons.Default.Laptop,
+                                    contentDescription = null
+                                )
+                            },
+                            label = { Text("macOS") }
+                        )
+                    }
                     NavigationRailItem(
                         selected = currentFeature == Feature.CLOUD_RUN_DEPLOY,
                         onClick = { viewModel.selectFeature(Feature.CLOUD_RUN_DEPLOY) },
