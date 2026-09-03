@@ -1,7 +1,7 @@
 package com.composeship.feature.macosrelease.data.service
 
-import com.composeship.feature.macosrelease.domain.service.ProcessOutput
-import com.composeship.feature.macosrelease.domain.service.ProcessService
+import com.composeship.core.domain.service.ProcessOutput
+import com.composeship.core.domain.service.ProcessService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow

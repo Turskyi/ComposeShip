@@ -4,6 +4,7 @@
     <string name="step_1_title">Step 1: Select Compose Multiplatform Project Root</string>
     <string name="project_root_label">Project Root Path</string>
     <string name="browse">Browse</string>
+    <string name="ok">OK</string>
     <string name="next">Next</string>
     <string name="back">Back</string>
     <string name="start_over">Start Over</string>
@@ -51,4 +52,19 @@
     <string name="error_api_key_not_found">API Key file not found at %s</string>
     <string name="error_not_gradle_project">Not a Gradle project (missing settings/build files)</string>
     <string name="error_missing_gradlew">Missing gradlew wrapper</string>
+
+    <string name="cloud_run_deploy_title">Google Cloud Run Deployer</string>
+    <string name="gcloud_project_id_label">GCP Project ID</string>
+    <string name="region_label">Region</string>
+    <string name="service_name_label">Service Name</string>
+    <string name="deploy">Deploy to Cloud Run</string>
+    <string name="deploying">Deploying...</string>
+    <string name="deployed_successfully">Deployed Successfully</string>
+    <string name="deploy_step_1_title">Deployment Configuration</string>
+
+    <string name="gcloud_project_id_info_title">GCP Project ID</string>
+    <string name="gcloud_project_id_info_text">Go to the Dashboard (https://console.cloud.google.com/home/dashboard), and you\'ll see \"Project ID\" in the Project Info card at the top left.</string>
+
+    <string name="service_name_info_title">Service Name</string>
+    <string name="service_name_info_text">This is the identifier for your app in Cloud Run. \n\n• MUST match the name in the GCP Console to update an existing app. \n• If you provide a new name, a new service will be created.\n\nVerify names at: https://console.cloud.google.com/run</string>
 </resources>

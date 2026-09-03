@@ -1,10 +1,9 @@
 package com.composeship.feature.macosrelease.data.service
 
+import com.composeship.core.domain.service.ProcessOutput
+import com.composeship.core.domain.service.ProcessService
 import com.composeship.feature.macosrelease.domain.service.GradleService
-import com.composeship.feature.macosrelease.domain.service.ProcessOutput
-import com.composeship.feature.macosrelease.domain.service.ProcessService
 import kotlinx.coroutines.flow.Flow
-import java.io.File
 
 class DesktopGradleService(
     private val processService: ProcessService

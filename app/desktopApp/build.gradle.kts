@@ -9,6 +9,7 @@ plugins {
 dependencies {
     implementation(projects.app.shared)
     implementation(projects.featureMacosRelease)
+    implementation(projects.featureCloudRunDeploy)
 
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutinesSwing)

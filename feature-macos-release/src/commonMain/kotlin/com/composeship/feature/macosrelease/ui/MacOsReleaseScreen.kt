@@ -70,6 +70,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.composeship.core.domain.model.LogType
 import com.composeship.core.ui.TechnicalGridBackground
 import composeship.core.generated.resources.Res
 import composeship.core.generated.resources.api_key_link_text

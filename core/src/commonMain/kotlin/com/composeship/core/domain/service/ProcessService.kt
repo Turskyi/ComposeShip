@@ -1,4 +1,4 @@
-package com.composeship.feature.macosrelease.domain.service
+package com.composeship.core.domain.service
 
 import kotlinx.coroutines.flow.Flow
 

@@ -1,6 +1,6 @@
 package com.composeship.feature.macosrelease.data.service
 
-import com.composeship.feature.macosrelease.domain.service.FileSystemService
+import com.composeship.core.domain.service.FileSystemService
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
@@ -20,9 +20,11 @@ class DesktopFileSystemService : FileSystemService {
         }
     }
 
-    override suspend fun pickFile(extension: String): String? {
+    override suspend fun pickFile(extension: String?): String? {
         val dialog = FileDialog(null as Frame?, "Select File", FileDialog.LOAD)
-        dialog.file = "*.$extension"
+        if (extension != null) {
+            dialog.file = "*.$extension"
+        }
         dialog.isVisible = true
         val directory = dialog.directory
         val file = dialog.file

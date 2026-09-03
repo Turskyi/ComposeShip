@@ -1,5 +1,6 @@
 package com.composeship.feature.macosrelease.domain.service
 
+import com.composeship.core.domain.service.ProcessOutput
 import kotlinx.coroutines.flow.Flow
 
 interface GradleService {

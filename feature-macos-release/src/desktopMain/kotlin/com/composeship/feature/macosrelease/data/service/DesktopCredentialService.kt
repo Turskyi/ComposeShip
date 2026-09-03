@@ -1,11 +1,10 @@
 package com.composeship.feature.macosrelease.data.service
 
+import com.composeship.core.domain.service.ProcessOutput
+import com.composeship.core.domain.service.ProcessService
 import com.composeship.feature.macosrelease.domain.service.CredentialService
-import com.composeship.feature.macosrelease.domain.service.ProcessOutput
-import com.composeship.feature.macosrelease.domain.service.ProcessService
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
 
 class DesktopCredentialService(
     private val processService: ProcessService
@@ -16,7 +15,7 @@ class DesktopCredentialService(
     override suspend fun saveCredential(key: String, value: String) {
         // Delete first to avoid error if exists
         deleteCredential(key)
-        
+
         processService.execute(
             listOf(
                 "security", "add-generic-password",
@@ -37,7 +36,7 @@ class DesktopCredentialService(
                 "-w"
             )
         ).filterIsInstance<ProcessOutput.Stdout>().firstOrNull()
-        
+
         return result?.line
     }
 

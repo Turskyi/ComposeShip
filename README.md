@@ -26,6 +26,10 @@ JVM), Server. It is designed as a suite of developer utility tools.
   macOS desktop apps. It automates the process of packaging, signing,
   notarizing, and uploading Compose Multiplatform apps to App Store Connect.
 
+* [/feature-cloud-run-deploy](./feature-cloud-run-deploy) is a deployment utility
+  for Google Cloud Run. It automates building Docker images via Cloud Build and
+  deploying them to Cloud Run.
+
 ## macOS Release Tool
 
 The **macOS Release Tool** is a guided, step-by-step utility built to bridge the
@@ -38,7 +42,7 @@ gap between Compose Multiplatform build outputs and the Mac App Store.
 - **Security**: Securely stores App Store Connect API credentials in the macOS
   Keychain.
 - **Automated Signing**: Handles deep signing of the app bundle, including JRE
-  libraries and sub-components.
+  libraries and subcomponents.
 - **Notarization & Upload**: Automates the use of `notarytool` and `altool` for
   submission.
 
@@ -54,6 +58,28 @@ For more technical details,
 see [HOW_IT_WORKS.md](./feature-macos-release/HOW_IT_WORKS.md)
 and [KNOWN_GAPS.md](./feature-macos-release/KNOWN_GAPS.md) in the feature
 module.
+
+## Cloud Run Deployer
+
+The **Cloud Run Deployer** is a simple one-click deployment tool for Ktor
+servers or other containerized applications.
+
+### Features
+
+- **Automated Build**: Triggers `gcloud builds submit` to create a Docker image
+  remotely.
+- **Easy Deployment**: Deploys the image to Cloud Run with pre-configured
+  regions and service names.
+- **Live Logs**: Streams the build and deployment logs directly into the app
+  UI.
+
+### How to use
+
+1. Run the Desktop application: `./gradlew :app:desktopApp:run`
+2. Switch to the **Cloud Run** tab in the navigation rail.
+3. Select the project root (must contain a `Dockerfile`).
+4. Enter your GCP Project ID and service details.
+5. Click **Deploy to Cloud Run**.
 
 ## Running the apps
 
