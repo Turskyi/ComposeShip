@@ -1,14 +1,17 @@
 package com.composeship
 
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
-import com.composeship.ui.web.LandingPage
-import com.composeship.ui.web.PrivacyPage
-import com.composeship.ui.web.SupportPage
+import com.composeship.core.data.service.PlaceholderFileSystemService
+import com.composeship.core.domain.model.Feature
+import com.composeship.feature.cloudrundeploy.data.service.PlaceholderGcloudService
+import com.composeship.feature.cloudrundeploy.di.CloudRunDeployContainer
+import com.composeship.feature.cloudrundeploy.ui.CloudRunDeployScreen
 import kotlinx.browser.window
 
 enum class WebPage {
@@ -18,37 +21,34 @@ enum class WebPage {
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     val appContainer = AppContainer()
-    
+
+    // Use placeholders for web
+    val gcloudService = PlaceholderGcloudService()
+    val fileSystemService = PlaceholderFileSystemService()
+    val cloudRunContainer =
+        CloudRunDeployContainer(gcloudService, fileSystemService)
+    val cloudRunViewModel = cloudRunContainer.createViewModel()
+
     ComposeViewport("ComposeShip") {
-        var currentPage by remember { 
+        var currentPage by remember {
             val path = window.location.hash.removePrefix("#")
-            mutableStateOf(when {
-                path.contains("support") -> WebPage.Support
-                path.contains("privacy") -> WebPage.Privacy
-                else -> WebPage.Home
-            })
+            mutableStateOf(
+                when {
+                    path.contains("support") -> WebPage.Support
+                    path.contains("privacy") -> WebPage.Privacy
+                    else -> WebPage.Home
+                }
+            )
         }
-        
-        App(appContainer = appContainer) { _ ->
-            when (currentPage) {
-                WebPage.Home -> LandingPage(
-                    onNavigateToSupport = { 
-                        currentPage = WebPage.Support
-                        window.location.hash = "support"
-                    },
-                    onNavigateToPrivacy = { 
-                        currentPage = WebPage.Privacy
-                        window.location.hash = "privacy"
-                    }
+
+        App(appContainer = appContainer) { feature, modifier ->
+            when (feature) {
+                Feature.CLOUD_RUN_DEPLOY -> CloudRunDeployScreen(
+                    cloudRunViewModel,
+                    modifier
                 )
-                WebPage.Support -> SupportPage(onBack = { 
-                    currentPage = WebPage.Home
-                    window.location.hash = ""
-                })
-                WebPage.Privacy -> PrivacyPage(onBack = { 
-                    currentPage = WebPage.Home
-                    window.location.hash = ""
-                })
+
+                Feature.MACOS_RELEASE -> Text("Not supported on Web", modifier)
             }
         }
     }

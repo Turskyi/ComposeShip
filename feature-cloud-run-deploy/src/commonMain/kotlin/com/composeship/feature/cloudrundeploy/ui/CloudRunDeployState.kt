@@ -21,5 +21,13 @@ data class CloudRunDeployState(
 
     val availableServices: List<String> = emptyList(),
     val isFetchingServices: Boolean = false,
-    val serviceFetchFailed: Boolean = false
+    val serviceFetchFailed: Boolean = false,
+
+    val deploySource: DeploySource = DeploySource.LOCAL,
+    val githubRepoUrl: String = "",
+    val githubBranch: String = "master"
 )
+
+enum class DeploySource {
+    LOCAL, GITHUB
+}

@@ -42,9 +42,10 @@
     <string name="hide_details">Hide Details</string>
 
     <string name="onboarding_title">Welcome to ComposeShip</string>
-    <string name="onboarding_description">Your essential suite of developer utility tools for Compose Multiplatform. Streamlining your workflow across Android, iOS, Web, and Desktop.</string>
-    <string name="onboarding_feature_macos">🚀 macOS Release Tool: Effortless App Store submission.</string>
-    <string name="onboarding_feature_more">🛠 More tools coming soon: Image resizing, background removal, and more.</string>
+    <string name="onboarding_description">Your essential suite of developer utility tools. Streamlining your workflow across Android, iOS, Web, and Desktop.</string>
+    <string name="onboarding_feature_macos">🚀 macOS Release Tool: Effortless App Store submission for Compose Multiplatform.</string>
+    <string name="onboarding_feature_cloud">☁️ Cloud Run Deployer: One-click deployment for any containerized application.</string>
+    <string name="onboarding_feature_more">🛠 More tools coming soon: Image resizing, analytics, and more.</string>
     <string name="get_started">Get Started</string>
     <string name="skip">Skip</string>
 

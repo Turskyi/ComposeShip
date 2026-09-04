@@ -1,4 +1,4 @@
-package com.composeship
+package com.composeship.core.domain.platform
 
 import android.os.Build
 

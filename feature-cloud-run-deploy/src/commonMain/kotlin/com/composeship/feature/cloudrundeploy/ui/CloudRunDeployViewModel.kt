@@ -99,6 +99,18 @@ class CloudRunDeployViewModel(
         _state.update { it.copy(serviceName = name) }
     }
 
+    fun onDeploySourceChanged(source: DeploySource) {
+        _state.update { it.copy(deploySource = source) }
+    }
+
+    fun onGithubRepoUrlChanged(url: String) {
+        _state.update { it.copy(githubRepoUrl = url) }
+    }
+
+    fun onGithubBranchChanged(branch: String) {
+        _state.update { it.copy(githubBranch = branch) }
+    }
+
     fun autoFetchProjectId() {
         viewModelScope.launch {
             _state.update { it.copy(isAutoFetchingProjectId = true, autoFetchFailed = false) }
@@ -166,12 +178,24 @@ class CloudRunDeployViewModel(
                 )
             }
 
-            gcloudService.deploy(
-                projectRoot = currentState.projectRoot,
-                gcloudProjectId = currentState.gcloudProjectId,
-                region = currentState.region,
-                serviceName = currentState.serviceName
-            ).collect { output ->
+            val deployFlow = if (currentState.deploySource == DeploySource.LOCAL) {
+                gcloudService.deploy(
+                    projectRoot = currentState.projectRoot,
+                    gcloudProjectId = currentState.gcloudProjectId,
+                    region = currentState.region,
+                    serviceName = currentState.serviceName
+                )
+            } else {
+                gcloudService.deployFromGitHub(
+                    githubRepoUrl = currentState.githubRepoUrl,
+                    githubBranch = currentState.githubBranch,
+                    gcloudProjectId = currentState.gcloudProjectId,
+                    region = currentState.region,
+                    serviceName = currentState.serviceName
+                )
+            }
+
+            deployFlow.collect { output ->
                 when (output) {
                     is ProcessOutput.Stdout -> appendLog(output.line)
                     is ProcessOutput.Stderr -> appendLog(output.line, LogType.Error)

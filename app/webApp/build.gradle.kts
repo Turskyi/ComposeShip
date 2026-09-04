@@ -21,6 +21,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(projects.app.shared)
+            implementation(projects.featureCloudRunDeploy)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
         }

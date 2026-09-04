@@ -1,4 +1,4 @@
-package com.composeship
+package com.composeship.core.domain.platform
 
 class WasmPlatform: Platform {
     override val name: String = "Web with Kotlin/Wasm"

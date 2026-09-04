@@ -4,6 +4,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.composeship.core.domain.model.Feature
 import com.composeship.feature.cloudrundeploy.di.CloudRunDeployContainer
+import com.composeship.feature.cloudrundeploy.service.DesktopGcloudService
 import com.composeship.feature.cloudrundeploy.ui.CloudRunDeployScreen
 import com.composeship.feature.macosrelease.data.service.DesktopFileSystemService
 import com.composeship.feature.macosrelease.data.service.DesktopProcessService
@@ -16,11 +17,12 @@ fun main() {
     // Shared services
     val processService = DesktopProcessService()
     val fileSystemService = DesktopFileSystemService()
+    val gcloudService = DesktopGcloudService(processService)
 
     val macOsReleaseContainer = DesktopAppContainer(processService, fileSystemService)
     val macOsViewModel = macOsReleaseContainer.createMacOsReleaseViewModel()
 
-    val cloudRunDeployContainer = CloudRunDeployContainer(processService, fileSystemService)
+    val cloudRunDeployContainer = CloudRunDeployContainer(gcloudService, fileSystemService)
     val cloudRunViewModel = cloudRunDeployContainer.createViewModel()
     
     application {

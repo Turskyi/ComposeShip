@@ -36,9 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composeship.MainViewModel
 import com.composeship.core.domain.model.Feature
+import com.composeship.core.domain.platform.getPlatform
 import com.composeship.core.theme.ComposeShipTheme
 import com.composeship.core.theme.ThemeMode
-import com.composeship.getPlatform
 import composeship.core.generated.resources.Res
 import composeship.core.generated.resources.app_name
 import org.jetbrains.compose.resources.stringResource

@@ -1,4 +1,4 @@
-package com.composeship
+package com.composeship.core.domain.platform
 
 class JVMPlatform: Platform {
     override val name: String = "Java ${System.getProperty("java.version")}"

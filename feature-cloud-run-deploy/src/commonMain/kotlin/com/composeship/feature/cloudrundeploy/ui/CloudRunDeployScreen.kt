@@ -17,9 +17,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -28,6 +30,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +54,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composeship.core.domain.model.LogType
+import com.composeship.core.domain.platform.PlatformType
+import com.composeship.core.domain.platform.getPlatform
 import com.composeship.core.ui.TechnicalGridBackground
 import composeship.core.generated.resources.Res
 import composeship.core.generated.resources.browse
@@ -79,7 +84,14 @@ fun CloudRunDeployScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val clipboardManager = LocalClipboardManager.current
+    val platform = remember { getPlatform() }
     var showInfoDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        if (platform.type != PlatformType.DESKTOP) {
+            viewModel.onDeploySourceChanged(DeploySource.GITHUB)
+        }
+    }
     var infoDialogTitle by remember { mutableStateOf("") }
     var infoDialogText by remember { mutableStateOf("") }
 
@@ -121,22 +133,64 @@ fun CloudRunDeployScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Source Selector
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (platform.type == PlatformType.DESKTOP) {
+                        FilterChip(
+                            selected = state.deploySource == DeploySource.LOCAL,
+                            onClick = { viewModel.onDeploySourceChanged(DeploySource.LOCAL) },
+                            label = { Text("Local Project") },
+                            leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        )
+                    }
+                    FilterChip(
+                        selected = state.deploySource == DeploySource.GITHUB,
+                        onClick = { viewModel.onDeploySourceChanged(DeploySource.GITHUB) },
+                        label = { Text("GitHub Repo") },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Configuration Section
-                OutlinedTextField(
-                    value = state.projectRoot,
-                    onValueChange = { viewModel.onProjectRootChanged(it) },
-                    label = { Text(stringResource(Res.string.project_root_label)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    trailingIcon = {
-                        TextButton(onClick = { viewModel.onBrowseProjectRoot() }) {
-                            Text(stringResource(Res.string.browse))
-                        }
-                    },
-                    isError = state.projectValidationError != null,
-                    supportingText = { state.projectValidationError?.let { Text(it) } }
-                )
+                if (state.deploySource == DeploySource.LOCAL) {
+                    OutlinedTextField(
+                        value = state.projectRoot,
+                        onValueChange = { viewModel.onProjectRootChanged(it) },
+                        label = { Text(stringResource(Res.string.project_root_label)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            TextButton(onClick = { viewModel.onBrowseProjectRoot() }) {
+                                Text(stringResource(Res.string.browse))
+                            }
+                        },
+                        isError = state.projectValidationError != null,
+                        supportingText = { state.projectValidationError?.let { Text(it) } }
+                    )
+                } else {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = state.githubRepoUrl,
+                            onValueChange = { viewModel.onGithubRepoUrlChanged(it) },
+                            label = { Text("GitHub Repo URL") },
+                            modifier = Modifier.weight(1f),
+                            placeholder = { Text("https://github.com/user/repo") }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        OutlinedTextField(
+                            value = state.githubBranch,
+                            onValueChange = { viewModel.onGithubBranchChanged(it) },
+                            label = { Text("Branch") },
+                            modifier = Modifier.width(120.dp)
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -147,7 +201,10 @@ fun CloudRunDeployScreen(
                         label = { Text(stringResource(Res.string.gcloud_project_id_label)) },
                         modifier = Modifier.weight(1f),
                         trailingIcon = {
-                            if (state.projectRoot.isNotEmpty() && !state.autoFetchFailed) {
+                            val canAutoFetch = (state.deploySource == DeploySource.LOCAL && state.projectRoot.isNotEmpty()) || 
+                                              (state.deploySource == DeploySource.GITHUB)
+                            
+                            if (canAutoFetch && !state.autoFetchFailed) {
                                 IconButton(
                                     onClick = { viewModel.autoFetchProjectId() },
                                     enabled = !state.isAutoFetchingProjectId
@@ -252,9 +309,15 @@ fun CloudRunDeployScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                val canDeploy = if (state.deploySource == DeploySource.LOCAL) {
+                    state.isProjectValid && state.gcloudProjectId.isNotEmpty()
+                } else {
+                    state.githubRepoUrl.isNotEmpty() && state.gcloudProjectId.isNotEmpty()
+                }
+
                 Button(
                     onClick = { viewModel.startDeploy() },
-                    enabled = !state.isDeploying && state.isProjectValid && state.gcloudProjectId.isNotEmpty(),
+                    enabled = !state.isDeploying && canDeploy,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         disabledContainerColor = if (state.isDeploying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
