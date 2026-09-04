@@ -7,8 +7,6 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
-
 kotlin {
     js {
         browser {
