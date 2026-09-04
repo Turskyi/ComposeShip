@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -6,15 +7,31 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
+
 kotlin {
     js {
-        browser()
+        browser {
+            commonWebpackConfig {
+                // ensure webpack-dev-server opens Chrome by name
+                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
+                    open = mapOf("app" to mapOf("name" to "google chrome"))
+                }
+            }
+        }
         binaries.executable()
     }
 
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        browser()
+        browser {
+            commonWebpackConfig {
+                // mirror MalaKnyzhka: open Chrome explicitly when server is ready
+                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
+                    open = mapOf("app" to mapOf("name" to "google chrome"))
+                }
+            }
+        }
         binaries.executable()
     }
 
