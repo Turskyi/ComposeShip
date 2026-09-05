@@ -45,6 +45,7 @@
     <string name="onboarding_description">Your essential suite of developer utility tools. Streamlining your workflow across Android, iOS, Web, and Desktop.</string>
     <string name="onboarding_feature_macos">🚀 macOS Release Tool: Effortless App Store submission for Compose Multiplatform.</string>
     <string name="onboarding_feature_cloud">☁️ Cloud Run Deployer: One-click deployment for any containerized application.</string>
+    <string name="onboarding_feature_firebase">🔥 Firebase Hosting Deployer: Deploy your Compose Multiplatform Web app in seconds.</string>
     <string name="onboarding_feature_more">🛠 More tools coming soon: Image resizing, analytics, and more.</string>
     <string name="get_started">Get Started</string>
     <string name="skip">Skip</string>
@@ -68,4 +69,8 @@
 
     <string name="service_name_info_title">Service Name</string>
     <string name="service_name_info_text">This is the identifier for your app in Cloud Run. \n\n• MUST match the name in the GCP Console to update an existing app. \n• If you provide a new name, a new service will be created.\n\nVerify names at: https://console.cloud.google.com/run</string>
+
+    <string name="firebase_deploy_title">Firebase Hosting Deployer</string>
+    <string name="firebase_deploy_desc">Deploy your WASM web application to Firebase Hosting.</string>
+    <string name="firebase_deploy_button">Deploy to Firebase</string>
 </resources>

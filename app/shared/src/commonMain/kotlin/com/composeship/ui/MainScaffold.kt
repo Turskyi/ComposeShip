@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
@@ -97,6 +98,17 @@ fun MainScaffold(
                             )
                         },
                         label = { Text("Cloud Run") }
+                    )
+                    NavigationRailItem(
+                        selected = currentFeature == Feature.FIREBASE_HOSTING,
+                        onClick = { viewModel.selectFeature(Feature.FIREBASE_HOSTING) },
+                        icon = {
+                            Icon(
+                                Icons.Default.Cloud,
+                                contentDescription = null
+                            )
+                        },
+                        label = { Text("Firebase") }
                     )
                 }
 

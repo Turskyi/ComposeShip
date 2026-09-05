@@ -10,6 +10,7 @@ dependencies {
     implementation(projects.app.shared)
     implementation(projects.featureMacosRelease)
     implementation(projects.featureCloudRunDeploy)
+    implementation(projects.featureFirebaseHostingDeploy)
 
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutinesSwing)

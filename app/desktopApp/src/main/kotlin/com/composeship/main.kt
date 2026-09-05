@@ -6,6 +6,9 @@ import com.composeship.core.domain.model.Feature
 import com.composeship.feature.cloudrundeploy.di.CloudRunDeployContainer
 import com.composeship.feature.cloudrundeploy.service.DesktopGcloudService
 import com.composeship.feature.cloudrundeploy.ui.CloudRunDeployScreen
+import com.composeship.feature.firebasedeploy.di.FirebaseDeployContainer
+import com.composeship.feature.firebasedeploy.service.DesktopFirebaseService
+import com.composeship.feature.firebasedeploy.ui.FirebaseDeployScreen
 import com.composeship.feature.macosrelease.data.service.DesktopFileSystemService
 import com.composeship.feature.macosrelease.data.service.DesktopProcessService
 import com.composeship.feature.macosrelease.di.DesktopAppContainer
@@ -24,6 +27,10 @@ fun main() {
 
     val cloudRunDeployContainer = CloudRunDeployContainer(gcloudService, fileSystemService)
     val cloudRunViewModel = cloudRunDeployContainer.createViewModel()
+
+    val firebaseService = DesktopFirebaseService(processService)
+    val firebaseDeployContainer = FirebaseDeployContainer(firebaseService, fileSystemService)
+    val firebaseViewModel = firebaseDeployContainer.createViewModel()
     
     application {
         Window(
@@ -34,6 +41,7 @@ fun main() {
                 when (feature) {
                     Feature.MACOS_RELEASE -> MacOsReleaseScreen(macOsViewModel, modifier)
                     Feature.CLOUD_RUN_DEPLOY -> CloudRunDeployScreen(cloudRunViewModel, modifier)
+                    Feature.FIREBASE_HOSTING -> FirebaseDeployScreen(firebaseViewModel, modifier)
                 }
             }
         }
