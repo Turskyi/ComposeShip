@@ -42,6 +42,17 @@ import com.composeship.core.theme.ComposeShipTheme
 import com.composeship.core.theme.ThemeMode
 import composeship.core.generated.resources.Res
 import composeship.core.generated.resources.app_name
+import composeship.core.generated.resources.feature_cloud_run
+import composeship.core.generated.resources.feature_firebase
+import composeship.core.generated.resources.feature_macos
+import composeship.core.generated.resources.language_en
+import composeship.core.generated.resources.language_system
+import composeship.core.generated.resources.language_uk
+import composeship.core.generated.resources.switch_language
+import composeship.core.generated.resources.switch_theme
+import composeship.core.generated.resources.theme_dark
+import composeship.core.generated.resources.theme_light
+import composeship.core.generated.resources.theme_system
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,7 +96,7 @@ fun MainScaffold(
                                     contentDescription = null
                                 )
                             },
-                            label = { Text("macOS") }
+                            label = { Text(stringResource(Res.string.feature_macos)) }
                         )
                     }
                     NavigationRailItem(
@@ -97,7 +108,7 @@ fun MainScaffold(
                                 contentDescription = null
                             )
                         },
-                        label = { Text("Cloud Run") }
+                        label = { Text(stringResource(Res.string.feature_cloud_run)) }
                     )
                     NavigationRailItem(
                         selected = currentFeature == Feature.FIREBASE_HOSTING,
@@ -108,7 +119,7 @@ fun MainScaffold(
                                 contentDescription = null
                             )
                         },
-                        label = { Text("Firebase") }
+                        label = { Text(stringResource(Res.string.feature_firebase)) }
                     )
                 }
 
@@ -127,9 +138,9 @@ private fun LanguageSwitcher(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val languages = listOf(
-        null to "System",
-        "en" to "English",
-        "uk" to "Українська"
+        null to stringResource(Res.string.language_system),
+        "en" to stringResource(Res.string.language_en),
+        "uk" to stringResource(Res.string.language_uk)
     )
 
     Box {
@@ -137,7 +148,7 @@ private fun LanguageSwitcher(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.Language,
-                    contentDescription = "Switch Language"
+                    contentDescription = stringResource(Res.string.switch_language)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(currentLanguage?.uppercase() ?: "SYS")
@@ -184,7 +195,7 @@ private fun ThemeSwitcher(
                     ThemeMode.DARK -> Icons.Default.DarkMode
                     ThemeMode.SYSTEM -> Icons.Default.Contrast
                 },
-                contentDescription = "Switch Theme"
+                contentDescription = stringResource(Res.string.switch_theme)
             )
         }
 
@@ -196,8 +207,12 @@ private fun ThemeSwitcher(
                 DropdownMenuItem(
                     text = {
                         Text(
-                            mode.name.lowercase()
-                                .replaceFirstChar { it.uppercase() })
+                            when (mode) {
+                                ThemeMode.LIGHT -> stringResource(Res.string.theme_light)
+                                ThemeMode.DARK -> stringResource(Res.string.theme_dark)
+                                ThemeMode.SYSTEM -> stringResource(Res.string.theme_system)
+                            }
+                        )
                     },
                     onClick = {
                         onModeSelected(mode)

@@ -2,6 +2,7 @@ package com.composeship.feature.cloudrundeploy.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.composeship.core.domain.model.DeploySource
 import com.composeship.core.domain.model.LogEntry
 import com.composeship.core.domain.model.LogType
 import com.composeship.core.domain.service.FileSystemService
@@ -122,7 +123,7 @@ class CloudRunDeployViewModel(
                     is ProcessOutput.Complete -> {
                         _state.update { it.copy(isAutoFetchingProjectId = false) }
                         if (output.exitCode == 0 && !detectedId.isNullOrBlank()) {
-                            onGcloudProjectIdChanged(detectedId!!)
+                            onGcloudProjectIdChanged(detectedId)
                             fetchServices()
                         } else {
                             _state.update { it.copy(autoFetchFailed = true) }

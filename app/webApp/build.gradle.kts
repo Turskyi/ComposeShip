@@ -37,6 +37,7 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.app.shared)
             implementation(projects.featureCloudRunDeploy)
+            implementation(projects.featureFirebaseHostingDeploy)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
         }

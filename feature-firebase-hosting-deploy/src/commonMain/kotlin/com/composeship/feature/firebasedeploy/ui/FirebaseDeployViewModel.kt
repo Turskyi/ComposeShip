@@ -2,6 +2,7 @@ package com.composeship.feature.firebasedeploy.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.composeship.core.domain.model.DeploySource
 import com.composeship.core.domain.model.LogEntry
 import com.composeship.core.domain.model.LogType
 import com.composeship.core.domain.service.FileSystemService
@@ -64,10 +65,27 @@ class FirebaseDeployViewModel(
         }
     }
 
+    fun onDeploySourceChanged(source: DeploySource) {
+        _state.update { it.copy(deploySource = source) }
+    }
+
+    fun onGithubRepoUrlChanged(url: String) {
+        _state.update { it.copy(githubRepoUrl = url) }
+    }
+
+    fun onGithubBranchChanged(branch: String) {
+        _state.update { it.copy(githubBranch = branch) }
+    }
+
     fun startDeploy() {
         val currentState = _state.value
-        if (currentState.projectRoot.isEmpty() || !currentState.isProjectValid) {
+        if (currentState.deploySource == DeploySource.LOCAL && (currentState.projectRoot.isEmpty() || !currentState.isProjectValid)) {
             _state.update { it.copy(deployError = "Valid Project Root is required") }
+            return
+        }
+
+        if (currentState.deploySource == DeploySource.GITHUB && currentState.githubRepoUrl.isEmpty()) {
+            _state.update { it.copy(deployError = "GitHub Repository URL is required") }
             return
         }
 
@@ -81,7 +99,16 @@ class FirebaseDeployViewModel(
                 )
             }
 
-            firebaseService.deploy(currentState.projectRoot).collect { output ->
+            val deployFlow = if (currentState.deploySource == DeploySource.LOCAL) {
+                firebaseService.deploy(currentState.projectRoot)
+            } else {
+                firebaseService.deployFromGitHub(
+                    repoUrl = currentState.githubRepoUrl,
+                    branch = currentState.githubBranch
+                )
+            }
+
+            deployFlow.collect { output ->
                 when (output) {
                     is ProcessOutput.Stdout -> appendLog(output.line)
                     is ProcessOutput.Stderr -> appendLog(output.line, LogType.Error)

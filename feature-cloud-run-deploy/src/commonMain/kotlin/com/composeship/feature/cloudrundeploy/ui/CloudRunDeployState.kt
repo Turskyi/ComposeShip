@@ -1,5 +1,6 @@
 package com.composeship.feature.cloudrundeploy.ui
 
+import com.composeship.core.domain.model.DeploySource
 import com.composeship.core.domain.model.LogEntry
 
 data class CloudRunDeployState(
@@ -27,7 +28,3 @@ data class CloudRunDeployState(
     val githubRepoUrl: String = "",
     val githubBranch: String = "master"
 )
-
-enum class DeploySource {
-    LOCAL, GITHUB
-}

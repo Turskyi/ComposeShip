@@ -5,4 +5,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface FirebaseService {
     fun deploy(projectRoot: String): Flow<ProcessOutput>
+    fun deployFromGitHub(repoUrl: String, branch: String): Flow<ProcessOutput>
 }

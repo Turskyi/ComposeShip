@@ -73,4 +73,21 @@
     <string name="firebase_deploy_title">Firebase Hosting Deployer</string>
     <string name="firebase_deploy_desc">Deploy your WASM web application to Firebase Hosting.</string>
     <string name="firebase_deploy_button">Deploy to Firebase</string>
+
+    <string name="feature_macos">macOS</string>
+    <string name="feature_cloud_run">Cloud Run</string>
+    <string name="feature_firebase">Firebase</string>
+
+    <string name="switch_language">Switch Language</string>
+    <string name="switch_theme">Switch Theme</string>
+
+    <string name="language_system">System</string>
+    <string name="language_en">English</string>
+    <string name="language_uk">Українська</string>
+
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system">System</string>
+
+    <string name="not_supported_on_web">Not supported on Web</string>
 </resources>

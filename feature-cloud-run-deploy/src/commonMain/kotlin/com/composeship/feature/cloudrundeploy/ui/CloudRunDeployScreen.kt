@@ -31,6 +31,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +54,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.composeship.core.domain.model.DeploySource
 import com.composeship.core.domain.model.LogType
 import com.composeship.core.domain.platform.PlatformType
 import com.composeship.core.domain.platform.getPlatform
@@ -147,13 +149,38 @@ fun CloudRunDeployScreen(
                             label = { Text("Local Project") },
                             leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(18.dp)) }
                         )
+                        FilterChip(
+                            selected = state.deploySource == DeploySource.GITHUB,
+                            onClick = { viewModel.onDeploySourceChanged(DeploySource.GITHUB) },
+                            label = { Text("GitHub Repo") },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        )
+                    } else {
+                        // On non-desktop, only GITHUB is available, make it non-clickable
+                        Surface(
+                            shape = FilterChipDefaults.shape,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.Label,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Text(
+                                    text = "GitHub Repo",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
                     }
-                    FilterChip(
-                        selected = state.deploySource == DeploySource.GITHUB,
-                        onClick = { viewModel.onDeploySourceChanged(DeploySource.GITHUB) },
-                        label = { Text("GitHub Repo") },
-                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

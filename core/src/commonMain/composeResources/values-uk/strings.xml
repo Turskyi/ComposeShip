@@ -44,4 +44,21 @@
     <string name="error_api_key_not_found">Файл API ключа не знайдено за шляхом %s</string>
     <string name="error_not_gradle_project">Це не проект Gradle (відсутні файли settings/build)</string>
     <string name="error_missing_gradlew">Відсутній gradlew wrapper</string>
+
+    <string name="feature_macos">macOS</string>
+    <string name="feature_cloud_run">Cloud Run</string>
+    <string name="feature_firebase">Firebase</string>
+
+    <string name="switch_language">Змінити мову</string>
+    <string name="switch_theme">Змінити тему</string>
+
+    <string name="language_system">Системна</string>
+    <string name="language_en">English</string>
+    <string name="language_uk">Українська</string>
+
+    <string name="theme_light">Світла</string>
+    <string name="theme_dark">Темна</string>
+    <string name="theme_system">Системна</string>
+
+    <string name="not_supported_on_web">Не підтримується у Веб</string>
 </resources>

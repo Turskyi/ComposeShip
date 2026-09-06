@@ -26,15 +26,16 @@ class DesktopGcloudService(
             projectRoot
         )
 
-        var buildSuccess = false
+        var buildExitCode = -1
         processService.execute(buildCommand, directory = projectRoot).collect { output ->
-            emit(output)
-            if (output is ProcessOutput.Complete && output.exitCode == 0) {
-                buildSuccess = true
+            if (output is ProcessOutput.Complete) {
+                buildExitCode = output.exitCode
+            } else {
+                emit(output)
             }
         }
 
-        if (buildSuccess) {
+        if (buildExitCode == 0) {
             emit(ProcessOutput.Stdout("Deploying to Cloud Run..."))
             val deployCommand = listOf(
                 "gcloud", "run", "deploy", serviceName,
@@ -46,6 +47,8 @@ class DesktopGcloudService(
                 "--allow-unauthenticated"
             )
             emitAll(processService.execute(deployCommand, directory = projectRoot))
+        } else if (buildExitCode != -1) {
+            emit(ProcessOutput.Complete(buildExitCode))
         }
     }
 

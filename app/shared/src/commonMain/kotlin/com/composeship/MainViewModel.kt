@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.composeship.core.domain.AppLocale
 import com.composeship.core.domain.SettingsRepository
 import com.composeship.core.domain.model.Feature
+import com.composeship.core.domain.platform.getPlatform
 import com.composeship.core.theme.ThemeMode
 import com.composeship.core.theme.ThemeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +28,9 @@ class MainViewModel(
     private val _showOnboarding = MutableStateFlow(settingsRepository.shouldShowOnboarding())
     val showOnboarding: StateFlow<Boolean> = _showOnboarding.asStateFlow()
 
-    private val _currentFeature = MutableStateFlow(Feature.MACOS_RELEASE)
+    private val _currentFeature = MutableStateFlow(
+        if (getPlatform().isMac) Feature.MACOS_RELEASE else Feature.CLOUD_RUN_DEPLOY
+    )
     val currentFeature: StateFlow<Feature> = _currentFeature.asStateFlow()
 
     fun setThemeMode(mode: ThemeMode) {
