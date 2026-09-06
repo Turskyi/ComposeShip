@@ -53,6 +53,27 @@ class WearReleaseViewModel(
                 // ignore detection errors
             }
         }
+        // If project looks valid and releaseNotes empty, set sensible default multilingual notes
+        if (settingsExists && _state.value.releaseNotes.isEmpty()) {
+            val defaultNotes = """
+<en-CA>
+Bug fixes and performance improvements. This release includes minor fixes and stability improvements to enhance reliability.
+</en-CA>
+<en-GB>
+Bug fixes and performance improvements. This release includes minor fixes and stability improvements to enhance reliability.
+</en-GB>
+<nl-NL>
+Foutoplossingen en prestatieverbeteringen. Deze release bevat kleine bugfixes en stabiliteitsverbeteringen om de betrouwbaarheid te vergroten.
+</nl-NL>
+<pl-PL>
+Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki i poprawia stabilność aplikacji.
+</pl-PL>
+<uk>
+Виправлення помилок та покращення продуктивності. Оновлення містить невеликі виправлення та підвищує стабільність роботи додатка.
+</uk>
+""".trimIndent()
+            _state.update { it.copy(releaseNotes = defaultNotes, lastOutputLines = it.lastOutputLines + "Inserted default release notes.") }
+        }
     }
 
     private fun detectPackageName(projectRoot: String): String? {
