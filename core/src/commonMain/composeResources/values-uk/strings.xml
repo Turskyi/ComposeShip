@@ -48,6 +48,7 @@
     <string name="feature_macos">macOS</string>
     <string name="feature_cloud_run">Cloud Run</string>
     <string name="feature_firebase">Firebase</string>
+    <string name="feature_wear">Wear OS</string>
 
     <string name="switch_language">Змінити мову</string>
     <string name="switch_theme">Змінити тему</string>

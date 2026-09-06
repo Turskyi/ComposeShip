@@ -24,6 +24,8 @@ fun main() {
 
     val macOsReleaseContainer = DesktopAppContainer(processService, fileSystemService)
     val macOsViewModel = macOsReleaseContainer.createMacOsReleaseViewModel()
+    val wearReleaseContainer = com.composeship.feature.wearrelease.di.DesktopAppContainer(processService, fileSystemService)
+    val wearViewModel = wearReleaseContainer.createWearReleaseViewModel()
 
     val cloudRunDeployContainer = CloudRunDeployContainer(gcloudService, fileSystemService)
     val cloudRunViewModel = cloudRunDeployContainer.createViewModel()
@@ -42,6 +44,8 @@ fun main() {
                     Feature.MACOS_RELEASE -> MacOsReleaseScreen(macOsViewModel, modifier)
                     Feature.CLOUD_RUN_DEPLOY -> CloudRunDeployScreen(cloudRunViewModel, modifier)
                     Feature.FIREBASE_HOSTING -> FirebaseDeployScreen(firebaseViewModel, modifier)
+                    Feature.WEAR_RELEASE -> com.composeship.feature.wearrelease.ui.WearReleaseScreen(wearViewModel, modifier)
+                    else -> com.composeship.feature.wearrelease.ui.WearReleaseScreen(wearViewModel, modifier)
                 }
             }
         }

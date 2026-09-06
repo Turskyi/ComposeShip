@@ -45,6 +45,7 @@ import composeship.core.generated.resources.app_name
 import composeship.core.generated.resources.feature_cloud_run
 import composeship.core.generated.resources.feature_firebase
 import composeship.core.generated.resources.feature_macos
+import composeship.core.generated.resources.feature_wear
 import composeship.core.generated.resources.language_en
 import composeship.core.generated.resources.language_system
 import composeship.core.generated.resources.language_uk
@@ -110,6 +111,9 @@ fun MainScaffold(
                         },
                         label = { Text(stringResource(Res.string.feature_cloud_run)) }
                     )
+
+                    
+
                     NavigationRailItem(
                         selected = currentFeature == Feature.FIREBASE_HOSTING,
                         onClick = { viewModel.selectFeature(Feature.FIREBASE_HOSTING) },
@@ -120,6 +124,17 @@ fun MainScaffold(
                             )
                         },
                         label = { Text(stringResource(Res.string.feature_firebase)) }
+                    )
+                    NavigationRailItem(
+                        selected = currentFeature == Feature.WEAR_RELEASE,
+                        onClick = { viewModel.selectFeature(Feature.WEAR_RELEASE) },
+                        icon = {
+                            Icon(
+                                Icons.Default.Laptop,
+                                contentDescription = null
+                            )
+                        },
+                        label = { Text(stringResource(Res.string.feature_wear)) }
                     )
                 }
 

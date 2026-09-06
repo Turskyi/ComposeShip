@@ -11,6 +11,7 @@ dependencies {
     implementation(projects.featureMacosRelease)
     implementation(projects.featureCloudRunDeploy)
     implementation(projects.featureFirebaseHostingDeploy)
+    implementation(projects.featureWearRelease)
 
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutinesSwing)

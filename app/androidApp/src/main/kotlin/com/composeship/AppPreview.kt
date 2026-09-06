@@ -16,7 +16,7 @@ fun AppPreview() {
 
     App(
         appContainer = previewContainer,
-        content = { modifier: Modifier ->
+        featureContent = { _feature, modifier: Modifier ->
             // Simple preview content shown when onboarding is dismissed
             Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("Preview content")
@@ -24,4 +24,3 @@ fun AppPreview() {
         }
     )
 }
-

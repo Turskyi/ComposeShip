@@ -30,6 +30,7 @@ fun MainViewController() = ComposeUIViewController {
         when (feature) {
             Feature.CLOUD_RUN_DEPLOY -> CloudRunDeployScreen(cloudRunViewModel, modifier)
             Feature.MACOS_RELEASE -> Text("Not supported on iOS", modifier)
+            else -> Text("Not supported on iOS", modifier)
         }
     }
 }

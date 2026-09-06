@@ -4,4 +4,5 @@ enum class Feature {
     MACOS_RELEASE,
     CLOUD_RUN_DEPLOY,
     FIREBASE_HOSTING
+    ,WEAR_RELEASE
 }

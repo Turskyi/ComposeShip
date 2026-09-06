@@ -34,7 +34,7 @@ fun main() {
     val firebaseViewModel = firebaseDeployContainer.createViewModel()
 
     ComposeViewport("ComposeShip") {
-        App(appContainer = appContainer) { feature, modifier ->
+            App(appContainer = appContainer) { feature, modifier ->
             when (feature) {
                 Feature.CLOUD_RUN_DEPLOY -> CloudRunDeployScreen(
                     cloudRunViewModel,
@@ -50,7 +50,11 @@ fun main() {
                     firebaseViewModel,
                     modifier
                 )
-                
+
+                else -> Text(
+                    stringResource(Res.string.not_supported_on_web),
+                    modifier
+                )
             }
         }
     }
