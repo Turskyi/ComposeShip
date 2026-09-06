@@ -119,13 +119,15 @@ fun FirebaseDeployScreen(
                     if (platform.type == PlatformType.DESKTOP) {
                         FilterChip(
                             selected = state.deploySource == DeploySource.LOCAL,
-                            onClick = { viewModel.onDeploySourceChanged(DeploySource.LOCAL) },
+                            onClick = { if (!state.isDeploying) viewModel.onDeploySourceChanged(DeploySource.LOCAL) },
+                            enabled = !state.isDeploying,
                             label = { Text("Local Project") },
                             leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(18.dp)) }
                         )
                         FilterChip(
                             selected = state.deploySource == DeploySource.GITHUB,
-                            onClick = { viewModel.onDeploySourceChanged(DeploySource.GITHUB) },
+                            onClick = { if (!state.isDeploying) viewModel.onDeploySourceChanged(DeploySource.GITHUB) },
+                            enabled = !state.isDeploying,
                             label = { Text("GitHub Repo") },
                             leadingIcon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = null, modifier = Modifier.size(18.dp)) }
                         )
@@ -163,10 +165,14 @@ fun FirebaseDeployScreen(
                     OutlinedTextField(
                         value = state.projectRoot,
                         onValueChange = { viewModel.onProjectRootChanged(it) },
+                        enabled = !state.isDeploying,
                         label = { Text(stringResource(Res.string.project_root_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         trailingIcon = {
-                            TextButton(onClick = { viewModel.onBrowseProjectRoot() }) {
+                            TextButton(
+                                onClick = { viewModel.onBrowseProjectRoot() },
+                                enabled = !state.isDeploying
+                            ) {
                                 Text(stringResource(Res.string.browse))
                             }
                         },
@@ -178,6 +184,7 @@ fun FirebaseDeployScreen(
                         OutlinedTextField(
                             value = state.githubRepoUrl,
                             onValueChange = { viewModel.onGithubRepoUrlChanged(it) },
+                            enabled = !state.isDeploying,
                             label = { Text("GitHub Repo URL") },
                             modifier = Modifier.weight(1f),
                             placeholder = { Text("https://github.com/user/repo") }
@@ -186,6 +193,7 @@ fun FirebaseDeployScreen(
                         OutlinedTextField(
                             value = state.githubBranch,
                             onValueChange = { viewModel.onGithubBranchChanged(it) },
+                            enabled = !state.isDeploying,
                             label = { Text("Branch") },
                             modifier = Modifier.width(120.dp)
                         )
@@ -200,28 +208,46 @@ fun FirebaseDeployScreen(
                     state.githubRepoUrl.isNotEmpty()
                 }
 
-                Button(
-                    onClick = { viewModel.startDeploy() },
-                    enabled = !state.isDeploying && canDeploy,
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        disabledContainerColor = if (state.isDeploying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                        disabledContentColor = if (state.isDeploying) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    Button(
+                        onClick = { viewModel.startDeploy() },
+                        enabled = !state.isDeploying && canDeploy,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            disabledContainerColor = if (state.isDeploying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                            disabledContentColor = if (state.isDeploying) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        if (state.isDeploying) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(Res.string.deploying),
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        } else {
+                            Text(stringResource(Res.string.firebase_deploy_button))
+                        }
+                    }
+
                     if (state.isDeploying) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = stringResource(Res.string.deploying),
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    } else {
-                        Text(stringResource(Res.string.firebase_deploy_button))
+                        Button(
+                            onClick = { viewModel.stopDeploy() },
+                            modifier = Modifier.height(ButtonDefaults.MinHeight),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        ) {
+                            Text("Stop")
+                        }
                     }
                 }
 

@@ -145,13 +145,15 @@ fun CloudRunDeployScreen(
                     if (platform.type == PlatformType.DESKTOP) {
                         FilterChip(
                             selected = state.deploySource == DeploySource.LOCAL,
-                            onClick = { viewModel.onDeploySourceChanged(DeploySource.LOCAL) },
+                            onClick = { if (!state.isDeploying) viewModel.onDeploySourceChanged(DeploySource.LOCAL) },
+                            enabled = !state.isDeploying,
                             label = { Text("Local Project") },
                             leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.size(18.dp)) }
                         )
                         FilterChip(
                             selected = state.deploySource == DeploySource.GITHUB,
-                            onClick = { viewModel.onDeploySourceChanged(DeploySource.GITHUB) },
+                            onClick = { if (!state.isDeploying) viewModel.onDeploySourceChanged(DeploySource.GITHUB) },
+                            enabled = !state.isDeploying,
                             label = { Text("GitHub Repo") },
                             leadingIcon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = null, modifier = Modifier.size(18.dp)) }
                         )
@@ -190,10 +192,14 @@ fun CloudRunDeployScreen(
                     OutlinedTextField(
                         value = state.projectRoot,
                         onValueChange = { viewModel.onProjectRootChanged(it) },
+                        enabled = !state.isDeploying,
                         label = { Text(stringResource(Res.string.project_root_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         trailingIcon = {
-                            TextButton(onClick = { viewModel.onBrowseProjectRoot() }) {
+                            TextButton(
+                                onClick = { viewModel.onBrowseProjectRoot() },
+                                enabled = !state.isDeploying
+                            ) {
                                 Text(stringResource(Res.string.browse))
                             }
                         },
@@ -205,6 +211,7 @@ fun CloudRunDeployScreen(
                         OutlinedTextField(
                             value = state.githubRepoUrl,
                             onValueChange = { viewModel.onGithubRepoUrlChanged(it) },
+                            enabled = !state.isDeploying,
                             label = { Text("GitHub Repo URL") },
                             modifier = Modifier.weight(1f),
                             placeholder = { Text("https://github.com/user/repo") }
@@ -213,6 +220,7 @@ fun CloudRunDeployScreen(
                         OutlinedTextField(
                             value = state.githubBranch,
                             onValueChange = { viewModel.onGithubBranchChanged(it) },
+                            enabled = !state.isDeploying,
                             label = { Text("Branch") },
                             modifier = Modifier.width(120.dp)
                         )
@@ -225,6 +233,7 @@ fun CloudRunDeployScreen(
                     OutlinedTextField(
                         value = state.gcloudProjectId,
                         onValueChange = { viewModel.onGcloudProjectIdChanged(it) },
+                        enabled = !state.isDeploying,
                         label = { Text(stringResource(Res.string.gcloud_project_id_label)) },
                         modifier = Modifier.weight(1f),
                         trailingIcon = {
@@ -234,7 +243,7 @@ fun CloudRunDeployScreen(
                             if (canAutoFetch && !state.autoFetchFailed) {
                                 IconButton(
                                     onClick = { viewModel.autoFetchProjectId() },
-                                    enabled = !state.isAutoFetchingProjectId
+                                    enabled = !state.isAutoFetchingProjectId && !state.isDeploying
                                 ) {
                                     if (state.isAutoFetchingProjectId) {
                                         CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
@@ -242,7 +251,7 @@ fun CloudRunDeployScreen(
                                         Icon(
                                             imageVector = Icons.Default.AutoFixHigh,
                                             contentDescription = "Auto-fetch project ID",
-                                            tint = MaterialTheme.colorScheme.primary
+                                            tint = if (state.isDeploying) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary
                                         )
                                     }
                                 }
@@ -266,6 +275,7 @@ fun CloudRunDeployScreen(
                     OutlinedTextField(
                         value = state.region,
                         onValueChange = { viewModel.onRegionChanged(it) },
+                        enabled = !state.isDeploying,
                         label = { Text(stringResource(Res.string.region_label)) },
                         modifier = Modifier.weight(1f)
                     )
@@ -288,6 +298,7 @@ fun CloudRunDeployScreen(
                     OutlinedTextField(
                         value = state.serviceName,
                         onValueChange = { viewModel.onServiceNameChanged(it) },
+                        enabled = !state.isDeploying,
                         label = { Text(stringResource(Res.string.service_name_label)) },
                         modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true).fillMaxWidth(),
                         trailingIcon = {
@@ -300,11 +311,13 @@ fun CloudRunDeployScreen(
                                 if (state.availableServices.size > 1 || state.serviceFetchFailed) {
                                     val serviceTitle = stringResource(Res.string.service_name_info_title)
                                     val serviceText = stringResource(Res.string.service_name_info_text)
-                                    IconButton(onClick = {
-                                        infoDialogTitle = serviceTitle
-                                        infoDialogText = serviceText
-                                        showInfoDialog = true
-                                    }) {
+                                    IconButton(
+                                        onClick = {
+                                            infoDialogTitle = serviceTitle
+                                            infoDialogText = serviceText
+                                            showInfoDialog = true
+                                        }
+                                    ) {
                                         Icon(imageVector = Icons.Default.Info, contentDescription = "Service Name Info")
                                     }
                                 }
@@ -342,28 +355,46 @@ fun CloudRunDeployScreen(
                     state.githubRepoUrl.isNotEmpty() && state.gcloudProjectId.isNotEmpty()
                 }
 
-                Button(
-                    onClick = { viewModel.startDeploy() },
-                    enabled = !state.isDeploying && canDeploy,
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        disabledContainerColor = if (state.isDeploying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                        disabledContentColor = if (state.isDeploying) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    Button(
+                        onClick = { viewModel.startDeploy() },
+                        enabled = !state.isDeploying && canDeploy,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            disabledContainerColor = if (state.isDeploying) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                            disabledContentColor = if (state.isDeploying) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        if (state.isDeploying) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(Res.string.deploying),
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        } else {
+                            Text(stringResource(Res.string.deploy))
+                        }
+                    }
+
                     if (state.isDeploying) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = stringResource(Res.string.deploying),
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    } else {
-                        Text(stringResource(Res.string.deploy))
+                        Button(
+                            onClick = { viewModel.stopDeploy() },
+                            modifier = Modifier.height(ButtonDefaults.MinHeight),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        ) {
+                            Text("Stop")
+                        }
                     }
                 }
 

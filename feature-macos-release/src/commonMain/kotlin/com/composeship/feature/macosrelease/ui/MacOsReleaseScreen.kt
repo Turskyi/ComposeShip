@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Launch
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -218,6 +219,7 @@ fun ProjectSelectionStep(
             OutlinedTextField(
                 value = state.projectRoot,
                 onValueChange = { viewModel.onProjectRootChanged(it) },
+                enabled = !state.isReleasing,
                 label = { Text(stringResource(Res.string.project_root_label)) },
                 modifier = Modifier.weight(1f),
                 isError = state.projectValidationError != null,
@@ -230,6 +232,7 @@ fun ProjectSelectionStep(
             Spacer(modifier = Modifier.width(8.dp))
             Button(
                 onClick = { viewModel.onBrowseProjectRoot() },
+                enabled = !state.isReleasing,
                 modifier = Modifier.padding(top = 8.dp)
             ) {
                 Text(stringResource(Res.string.browse))
@@ -268,9 +271,12 @@ fun TaskSelectionStep(
 
             Surface(
                 onClick = {
-                    viewModel.onTaskSelected(task)
-                    if (!isRelease) showDebugWarning = true
+                    if (!state.isReleasing) {
+                        viewModel.onTaskSelected(task)
+                        if (!isRelease) showDebugWarning = true
+                    }
                 },
+                enabled = !state.isReleasing,
                 shape = MaterialTheme.shapes.medium,
                 color = if (state.selectedTask == task) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                 modifier = Modifier.fillMaxWidth()
@@ -281,6 +287,7 @@ fun TaskSelectionStep(
                 ) {
                     RadioButton(
                         selected = state.selectedTask == task,
+                        enabled = !state.isReleasing,
                         onClick = {
                             viewModel.onTaskSelected(task)
                             if (!isRelease) showDebugWarning = true
@@ -347,14 +354,15 @@ fun CategorySelectionStep(
         Spacer(modifier = Modifier.height(16.dp))
 
         ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded },
+            expanded = expanded && !state.isReleasing,
+            onExpandedChange = { if (!state.isReleasing) expanded = !expanded },
             modifier = Modifier.fillMaxWidth()
         ) {
             OutlinedTextField(
                 value = state.selectedCategory,
                 onValueChange = {},
                 readOnly = true,
+                enabled = !state.isReleasing,
                 label = { Text("Application Category") },
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(
@@ -449,7 +457,8 @@ fun IdentitySelectionStep(
             }
 
             Surface(
-                onClick = { viewModel.onIdentitySelected(identity) },
+                onClick = { if (!state.isReleasing) viewModel.onIdentitySelected(identity) },
+                enabled = !state.isReleasing,
                 shape = MaterialTheme.shapes.small,
                 color = if (state.selectedIdentity == identity) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                 modifier = Modifier.fillMaxWidth()
@@ -463,6 +472,7 @@ fun IdentitySelectionStep(
                 ) {
                     RadioButton(
                         selected = state.selectedIdentity == identity,
+                        enabled = !state.isReleasing,
                         onClick = { viewModel.onIdentitySelected(identity) }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -521,7 +531,8 @@ fun IdentitySelectionStep(
         } else {
             state.installerIdentities.forEach { identity ->
                 Surface(
-                    onClick = { viewModel.onInstallerIdentitySelected(identity) },
+                    onClick = { if (!state.isReleasing) viewModel.onInstallerIdentitySelected(identity) },
+                    enabled = !state.isReleasing,
                     shape = MaterialTheme.shapes.small,
                     color = if (state.selectedInstallerIdentity == identity) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                     modifier = Modifier.fillMaxWidth()
@@ -535,6 +546,7 @@ fun IdentitySelectionStep(
                     ) {
                         RadioButton(
                             selected = state.selectedInstallerIdentity == identity,
+                            enabled = !state.isReleasing,
                             onClick = {
                                 viewModel.onInstallerIdentitySelected(
                                     identity
@@ -594,6 +606,7 @@ fun CredentialsStep(
                     state.apiKeyPath
                 )
             },
+            enabled = !state.isReleasing,
             label = stringResource(Res.string.issuer_id_label),
             helpText = stringResource(Res.string.issuer_id_help),
             isError = !state.isIssuerIdValid,
@@ -611,6 +624,7 @@ fun CredentialsStep(
                     state.apiKeyPath
                 )
             },
+            enabled = !state.isReleasing,
             label = stringResource(Res.string.key_id_label),
             helpText = stringResource(Res.string.key_id_help),
             isError = !state.isKeyIdValid,
@@ -633,6 +647,7 @@ fun CredentialsStep(
                             it
                         )
                     },
+                    enabled = !state.isReleasing,
                     label = stringResource(Res.string.api_key_path_label),
                     helpText = stringResource(Res.string.api_key_path_help),
                     isError = false,
@@ -642,6 +657,7 @@ fun CredentialsStep(
             Spacer(modifier = Modifier.width(8.dp))
             Button(
                 onClick = { viewModel.onBrowseApiKey() },
+                enabled = !state.isReleasing,
                 modifier = Modifier.padding(top = 8.dp)
             ) {
                 Text(stringResource(Res.string.browse))
@@ -718,7 +734,8 @@ fun CredentialField(
     isError: Boolean,
     errorText: String,
     onActionClick: (() -> Unit)? = null,
-    actionLabel: String? = null
+    actionLabel: String? = null,
+    enabled: Boolean = true
 ) {
     var showHelp by remember { mutableStateOf(false) }
 
@@ -727,6 +744,7 @@ fun CredentialField(
             OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
+                enabled = enabled,
                 label = { Text(label) },
                 modifier = Modifier.weight(1f),
                 isError = isError,
@@ -831,7 +849,8 @@ fun ReleaseProcessStep(
 
             Button(
                 onClick = { viewModel.startRelease() },
-                enabled = !state.isReleasing && !state.releaseSuccess
+                enabled = !state.isReleasing && !state.releaseSuccess,
+                modifier = if (state.isReleasing) Modifier.weight(1f) else Modifier
             ) {
                 Text(
                     if (state.releaseSuccess)
@@ -841,7 +860,20 @@ fun ReleaseProcessStep(
                 )
             }
 
-            if (state.releaseSuccess || state.releaseError != null) {
+            if (state.isReleasing) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = { viewModel.stopRelease() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                ) {
+                    Text("Stop")
+                }
+            }
+
+            if ((state.releaseSuccess || state.releaseError != null) && !state.isReleasing) {
                 Spacer(modifier = Modifier.width(8.dp))
                 TextButton(onClick = { viewModel.startOver() }) {
                     Text(stringResource(Res.string.start_over))

@@ -10,6 +10,7 @@ import com.composeship.core.domain.service.ProcessService
 import com.composeship.feature.macosrelease.domain.service.AppStoreConnectService
 import com.composeship.feature.macosrelease.domain.service.CredentialService
 import com.composeship.feature.macosrelease.domain.service.GradleService
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +27,8 @@ class MacOsReleaseViewModel(
 
     private val _state = MutableStateFlow(MacOsReleaseState())
     val state: StateFlow<MacOsReleaseState> = _state.asStateFlow()
+
+    private var releaseJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -403,7 +406,8 @@ class MacOsReleaseViewModel(
     }
 
     fun startRelease() {
-        viewModelScope.launch {
+        releaseJob?.cancel()
+        releaseJob = viewModelScope.launch {
             val issuerId = _state.value.apiIssuerId
             val keyId = _state.value.apiKeyId
             val keyPath = _state.value.apiKeyPath
@@ -466,12 +470,26 @@ class MacOsReleaseViewModel(
                         releaseError = "Build failed with exit code $buildExit"
                     )
                 }
+                releaseJob = null
                 return@launch
             }
             appendLog("Build successful!", LogType.Success)
 
             proceedToReleaseFlow()
+            releaseJob = null
         }
+    }
+
+    fun stopRelease() {
+        releaseJob?.cancel()
+        releaseJob = null
+        _state.update {
+            it.copy(
+                isReleasing = false,
+                releaseError = "Release process cancelled by user"
+            )
+        }
+        appendLog("Release process stopped by user.", LogType.Error)
     }
 
     private suspend fun saveCredentials() {

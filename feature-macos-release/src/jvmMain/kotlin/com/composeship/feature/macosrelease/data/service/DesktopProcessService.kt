@@ -22,11 +22,13 @@ class DesktopProcessService : ProcessService {
         processBuilder.environment().putAll(env)
         processBuilder.redirectErrorStream(false)
 
+        var process: Process? = null
         try {
-            val process = processBuilder.start()
+            val startedProcess = processBuilder.start()
+            process = startedProcess
 
             val stdoutJob = launch(Dispatchers.IO) {
-                BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
+                BufferedReader(InputStreamReader(startedProcess.inputStream)).use { reader ->
                     var line: String?
                     while (reader.readLine().also { line = it } != null) {
                         trySend(ProcessOutput.Stdout(line!!))
@@ -35,7 +37,7 @@ class DesktopProcessService : ProcessService {
             }
 
             val stderrJob = launch(Dispatchers.IO) {
-                BufferedReader(InputStreamReader(process.errorStream)).use { reader ->
+                BufferedReader(InputStreamReader(startedProcess.errorStream)).use { reader ->
                     var line: String?
                     while (reader.readLine().also { line = it } != null) {
                         trySend(ProcessOutput.Stderr(line!!))
@@ -44,7 +46,7 @@ class DesktopProcessService : ProcessService {
             }
 
             launch(Dispatchers.IO) {
-                val exitCode = process.waitFor()
+                val exitCode = startedProcess.waitFor()
                 stdoutJob.join()
                 stderrJob.join()
                 trySend(ProcessOutput.Complete(exitCode))
@@ -56,8 +58,11 @@ class DesktopProcessService : ProcessService {
         }
 
         awaitClose {
-            // No direct way to stop process easily without reference, 
-            // but for this tool, processes are usually short-lived or crucial.
+            process?.let {
+                if (it.isAlive) {
+                    it.destroyForcibly()
+                }
+            }
         }
     }
 }

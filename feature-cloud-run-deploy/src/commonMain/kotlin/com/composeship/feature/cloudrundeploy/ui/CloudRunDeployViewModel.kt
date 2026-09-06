@@ -8,6 +8,7 @@ import com.composeship.core.domain.model.LogType
 import com.composeship.core.domain.service.FileSystemService
 import com.composeship.core.domain.service.ProcessOutput
 import com.composeship.feature.cloudrundeploy.domain.GcloudService
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +22,8 @@ class CloudRunDeployViewModel(
 
     private val _state = MutableStateFlow(CloudRunDeployState())
     val state: StateFlow<CloudRunDeployState> = _state.asStateFlow()
+
+    private var deployJob: Job? = null
 
     fun onProjectRootChanged(path: String) {
         _state.update { 
@@ -169,7 +172,8 @@ class CloudRunDeployViewModel(
             return
         }
 
-        viewModelScope.launch {
+        deployJob?.cancel()
+        deployJob = viewModelScope.launch {
             _state.update {
                 it.copy(
                     isDeploying = true,
@@ -208,6 +212,7 @@ class CloudRunDeployViewModel(
                         } else {
                             _state.update { it.copy(deployError = "Deployment failed with exit code ${output.exitCode}") }
                         }
+                        deployJob = null
                     }
                     is ProcessOutput.Error -> {
                         _state.update {
@@ -216,10 +221,23 @@ class CloudRunDeployViewModel(
                                 deployError = output.throwable.message ?: "Unknown error"
                             )
                         }
+                        deployJob = null
                     }
                 }
             }
         }
+    }
+
+    fun stopDeploy() {
+        deployJob?.cancel()
+        deployJob = null
+        _state.update { 
+            it.copy(
+                isDeploying = false,
+                deployError = "Deployment cancelled by user"
+            ) 
+        }
+        appendLog("Deployment stopped by user.", LogType.Error)
     }
 
     private fun appendLog(message: String, type: LogType = LogType.Info) {
