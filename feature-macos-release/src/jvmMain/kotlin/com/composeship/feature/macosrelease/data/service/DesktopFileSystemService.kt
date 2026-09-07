@@ -37,10 +37,14 @@ class DesktopFileSystemService : FileSystemService {
 
     override fun exists(path: String): Boolean = File(path).exists()
 
+    override fun length(path: String): Long = File(path).length()
+
+    override fun getUserHome(): String? = System.getProperty("user.home")
+
     override fun readFile(path: String): String? {
         return try {
             File(path).readText()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

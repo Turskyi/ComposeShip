@@ -31,6 +31,9 @@ data class MacOsReleaseState(
     val apiKeyPath: String = "",
     val detectedApiKeyFiles: List<String> = emptyList(),
 
+    val customIconPath: String = "",
+    val isIconValid: Boolean = true,
+
     val releaseLogs: List<LogEntry> = emptyList(),
     val isReleasing: Boolean = false,
     val releaseError: String? = null,
@@ -44,5 +47,6 @@ enum class ReleaseStep {
     AppCategory,
     SigningIdentity,
     AppStoreCredentials,
+    SelectIcon,
     Process
 }

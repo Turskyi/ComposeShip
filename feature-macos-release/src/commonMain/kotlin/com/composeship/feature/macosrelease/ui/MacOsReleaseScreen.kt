@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -83,6 +84,8 @@ import composeship.core.generated.resources.browse
 import composeship.core.generated.resources.error_invalid_issuer_id
 import composeship.core.generated.resources.error_invalid_key_id
 import composeship.core.generated.resources.hide_details
+import composeship.core.generated.resources.icon_path_label
+import composeship.core.generated.resources.icon_selection_explanation
 import composeship.core.generated.resources.identity_app_store_desc
 import composeship.core.generated.resources.identity_developer_id_desc
 import composeship.core.generated.resources.installer_identity_explanation
@@ -109,6 +112,7 @@ import composeship.core.generated.resources.step_3_title
 import composeship.core.generated.resources.step_4_title
 import composeship.core.generated.resources.step_5_title
 import composeship.core.generated.resources.step_category_title
+import composeship.core.generated.resources.step_icon_title
 import composeship.core.generated.resources.task_debug_desc
 import composeship.core.generated.resources.task_release_desc
 import kotlinx.coroutines.launch
@@ -135,7 +139,7 @@ fun MacOsReleaseScreen(
                 if (MaterialTheme.colorScheme.background.luminance() < 0.5f)
                     null
                 else
-                    androidx.compose.foundation.BorderStroke(
+                    BorderStroke(
                         1.dp,
                         MaterialTheme.colorScheme.outlineVariant,
                     )
@@ -188,6 +192,11 @@ fun MacOsReleaseScreen(
                         )
 
                         ReleaseStep.AppStoreCredentials -> CredentialsStep(
+                            state,
+                            viewModel
+                        )
+
+                        ReleaseStep.SelectIcon -> IconSelectionStep(
                             state,
                             viewModel
                         )
@@ -712,6 +721,60 @@ fun CredentialsStep(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        Row {
+            OutlinedButton(onClick = { viewModel.previousStep() }) {
+                Text(stringResource(Res.string.back))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = { viewModel.nextStep() }) {
+                Text(stringResource(Res.string.next))
+            }
+        }
+    }
+}
+
+@Composable
+fun IconSelectionStep(
+    state: MacOsReleaseState,
+    viewModel: MacOsReleaseViewModel
+) {
+    Column {
+        Text(
+            stringResource(Res.string.step_icon_title),
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            stringResource(Res.string.icon_selection_explanation),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = state.customIconPath,
+                onValueChange = { viewModel.onIconPathChanged(it) },
+                enabled = !state.isReleasing,
+                label = { Text(stringResource(Res.string.icon_path_label)) },
+                modifier = Modifier.weight(1f),
+                isError = !state.isIconValid
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = { viewModel.onBrowseIcon() },
+                enabled = !state.isReleasing,
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text(stringResource(Res.string.browse))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         Row {
             OutlinedButton(onClick = { viewModel.previousStep() }) {

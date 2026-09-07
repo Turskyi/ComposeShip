@@ -54,12 +54,7 @@ class MacOsReleaseViewModel(
     }
 
     private fun autoDetectApiKey() {
-        val home = try {
-            System.getProperty("user.home")
-        } catch (e: Exception) {
-            println("Error getting user.home: ${e.message}")
-            null
-        } ?: return
+        val home = fileSystemService.getUserHome() ?: return
         val searchRoots = mutableListOf(
             "$home/.appstoreconnect/private_keys",
             "$home/private_keys",
@@ -168,6 +163,65 @@ class MacOsReleaseViewModel(
             )
         }
         detectTasks(path)
+        detectCategory(path)
+    }
+
+    private fun detectCategory(path: String) {
+        val possibleSubprojects =
+            listOf("", "composeApp", "app/desktopApp", "desktop")
+
+        for (sub in possibleSubprojects) {
+            val subPath = if (sub.isEmpty()) path else "$path/$sub"
+
+            // 1. Check build.gradle.kts or build.gradle
+            val buildFiles = listOf("$subPath/build.gradle.kts", "$subPath/build.gradle")
+            for (buildFilePath in buildFiles) {
+                if (fileSystemService.exists(buildFilePath)) {
+                    val content = fileSystemService.readFile(buildFilePath) ?: ""
+                    
+                    // Try direct property: category = "..."
+                    val categoryMatch =
+                        Regex("""category\s*=\s*["']([^"']+)["']""").find(content)
+                    if (categoryMatch != null) {
+                        val category = categoryMatch.groupValues[1]
+                        _state.update { it.copy(selectedCategory = category) }
+                        return
+                    }
+
+                    // Try extraKeysRawXml containing LSApplicationCategoryType
+                    val extraKeysMatch = Regex(
+                        """LSApplicationCategoryType</key>\s*<string>([^<]+)</string>""",
+                        RegexOption.IGNORE_CASE
+                    ).find(content)
+                    if (extraKeysMatch != null) {
+                        val category = extraKeysMatch.groupValues[1].trim()
+                        _state.update { it.copy(selectedCategory = category) }
+                        return
+                    }
+                }
+            }
+
+            // 2. Check for Info.plist in common locations
+            val plistLocations = listOf(
+                "$subPath/src/desktopMain/resources/Info.plist",
+                "$subPath/src/main/resources/Info.plist",
+                "$subPath/Info.plist"
+            )
+            for (plistPath in plistLocations) {
+                if (fileSystemService.exists(plistPath)) {
+                    val content = fileSystemService.readFile(plistPath) ?: ""
+                    val categoryMatch = Regex(
+                        """<key>LSApplicationCategoryType</key>\s*<string>([^<]+)</string>""",
+                        RegexOption.IGNORE_CASE
+                    ).find(content)
+                    if (categoryMatch != null) {
+                        val category = categoryMatch.groupValues[1].trim()
+                        _state.update { it.copy(selectedCategory = category) }
+                        return
+                    }
+                }
+            }
+        }
     }
 
     private fun detectTasks(path: String) {
@@ -235,7 +289,16 @@ class MacOsReleaseViewModel(
             }
 
             ReleaseStep.SigningIdentity -> ReleaseStep.AppStoreCredentials
-            ReleaseStep.AppStoreCredentials -> ReleaseStep.Process
+            ReleaseStep.AppStoreCredentials -> {
+                val icon = findSourceIcon(_state.value.projectRoot)
+                if (icon != null) {
+                    ReleaseStep.Process
+                } else {
+                    ReleaseStep.SelectIcon
+                }
+            }
+
+            ReleaseStep.SelectIcon -> ReleaseStep.Process
             ReleaseStep.Process -> ReleaseStep.Process
         }
         _state.update { it.copy(step = next) }
@@ -248,7 +311,11 @@ class MacOsReleaseViewModel(
             ReleaseStep.AppCategory -> ReleaseStep.SelectTask
             ReleaseStep.SigningIdentity -> ReleaseStep.AppCategory
             ReleaseStep.AppStoreCredentials -> ReleaseStep.SigningIdentity
-            ReleaseStep.Process -> ReleaseStep.AppStoreCredentials
+            ReleaseStep.SelectIcon -> ReleaseStep.AppStoreCredentials
+            ReleaseStep.Process -> {
+                val icon = findSourceIcon(_state.value.projectRoot)
+                if (icon != null) ReleaseStep.AppStoreCredentials else ReleaseStep.SelectIcon
+            }
         }
         _state.update { it.copy(step = prev) }
     }
@@ -277,7 +344,15 @@ class MacOsReleaseViewModel(
             "public.app-category.video",
             "public.app-category.weather"
         )
-        _state.update { it.copy(availableCategories = categories) }
+
+        val currentSelected = _state.value.selectedCategory
+        val finalCategories = if (currentSelected.isNotEmpty() && !categories.contains(currentSelected)) {
+            (listOf(currentSelected) + categories).distinct()
+        } else {
+            categories
+        }
+
+        _state.update { it.copy(availableCategories = finalCategories) }
     }
 
     fun startOver() {
@@ -386,6 +461,19 @@ class MacOsReleaseViewModel(
         }
     }
 
+    fun onIconPathChanged(path: String) {
+        _state.update { it.copy(customIconPath = path, isIconValid = true) }
+    }
+
+    fun onBrowseIcon() {
+        viewModelScope.launch {
+            val path = fileSystemService.pickFile("png")
+            if (path != null) {
+                onIconPathChanged(path)
+            }
+        }
+    }
+
     fun onBrowseApiKey() {
         viewModelScope.launch {
             val path = fileSystemService.pickFile("p8")
@@ -408,75 +496,103 @@ class MacOsReleaseViewModel(
     fun startRelease() {
         releaseJob?.cancel()
         releaseJob = viewModelScope.launch {
-            val issuerId = _state.value.apiIssuerId
-            val keyId = _state.value.apiKeyId
-            val keyPath = _state.value.apiKeyPath
+            try {
+                val issuerId = _state.value.apiIssuerId
+                val keyId = _state.value.apiKeyId
+                val keyPath = _state.value.apiKeyPath
 
-            if (issuerId.isEmpty() || keyId.isEmpty() || keyPath.isEmpty()) {
-                _state.update { it.copy(releaseError = "App Store Connect credentials are required") }
-                return@launch
-            }
-
-            if (!fileSystemService.exists(keyPath)) {
-                _state.update { it.copy(releaseError = "API Key file not found at $keyPath") }
-                return@launch
-            }
-
-            saveCredentials()
-            _state.update {
-                it.copy(
-                    isReleasing = true,
-                    releaseLogs = emptyList(),
-                    releaseError = null
-                )
-            }
-
-            val root = _state.value.projectRoot
-
-            // 1. Icon Regeneration (MUST happen before build)
-            appendLog("Step 1/10: Regenerating icons...")
-            if (!regenerateIcons(root)) return@launch
-
-            // 2. Clean build (ensure no stale artifacts)
-            appendLog("Step 2/10: Cleaning build artifacts...")
-            val cleanTask =
-                _state.value.selectedTask.substringBeforeLast(":") + ":clean"
-            executeCommand(listOf("./gradlew", cleanTask))
-
-            // 3. Build
-            appendLog("Step 3/10: Starting build: ${_state.value.selectedTask}...")
-            var buildExit = -1
-            gradleService.runTask(root, _state.value.selectedTask)
-                .collect { output ->
-                    when (output) {
-                        is ProcessOutput.Stdout -> appendLog(output.line)
-                        is ProcessOutput.Stderr -> appendLog(
-                            output.line,
-                            LogType.Error
-                        )
-
-                        is ProcessOutput.Complete -> buildExit = output.exitCode
-                        is ProcessOutput.Error -> appendLog(
-                            output.throwable.message ?: "Unknown error",
-                            LogType.Error
-                        )
-                    }
+                if (issuerId.isEmpty() || keyId.isEmpty() || keyPath.isEmpty()) {
+                    _state.update { it.copy(releaseError = "App Store Connect credentials are required") }
+                    return@launch
                 }
 
-            if (buildExit != 0) {
+                if (!fileSystemService.exists(keyPath)) {
+                    _state.update { it.copy(releaseError = "API Key file not found at $keyPath") }
+                    return@launch
+                }
+
+                saveCredentials()
+                _state.update {
+                    it.copy(
+                        isReleasing = true,
+                        releaseLogs = emptyList(),
+                        releaseError = null
+                    )
+                }
+
+                val root = _state.value.projectRoot
+
+                // 1. Icon Regeneration (MUST happen before build)
+                appendLog("Regenerating icons...")
+                if (!regenerateIcons(root)) {
+                    _state.update { it.copy(isReleasing = false) }
+                    return@launch
+                }
+
+                // 2. Clean build (ensure no stale artifacts)
+                appendLog("Cleaning build artifacts...")
+                val cleanTask =
+                    _state.value.selectedTask.substringBeforeLast(":") + ":clean"
+                executeCommand(listOf("./gradlew", cleanTask), logCommand = true)
+
+                // 3. Build
+                appendLog("Starting build: ${_state.value.selectedTask}...")
+                var buildExit = -1
+                gradleService.runTask(root, _state.value.selectedTask)
+                    .collect { output ->
+                        when (output) {
+                            is ProcessOutput.Stdout -> appendLog(output.line)
+                            is ProcessOutput.Stderr -> appendLog(
+                                output.line,
+                                LogType.Error
+                            )
+
+                            is ProcessOutput.Complete -> buildExit = output.exitCode
+                            is ProcessOutput.Error -> appendLog(
+                                output.throwable.message ?: "Unknown error",
+                                LogType.Error
+                            )
+                        }
+                    }
+
+                if (buildExit != 0) {
+                    val appPath = findAppBundle(root)
+                    if (appPath != null) {
+                        appendLog(
+                            "Build finished with errors (exit code $buildExit), but an .app bundle was found at $appPath.",
+                            LogType.Error
+                        )
+                        appendLog(
+                            "Proceeding with manual fixes and signing as per the recovery flow...",
+                            LogType.Info
+                        )
+                    } else {
+                        _state.update {
+                            it.copy(
+                                isReleasing = false,
+                                releaseError = "Build failed with exit code $buildExit and no .app bundle was found."
+                            )
+                        }
+                        releaseJob = null
+                        return@launch
+                    }
+                } else {
+                    appendLog("Build successful!", LogType.Success)
+                }
+
+                proceedToReleaseFlow()
+            } catch (e: Exception) {
+                appendLog("Unexpected error: ${e.message}", LogType.Error)
                 _state.update {
                     it.copy(
                         isReleasing = false,
-                        releaseError = "Build failed with exit code $buildExit"
+                        releaseError = e.message ?: "Unknown error"
                     )
                 }
+            } finally {
                 releaseJob = null
-                return@launch
+                _state.update { it.copy(isReleasing = false) }
             }
-            appendLog("Build successful!", LogType.Success)
-
-            proceedToReleaseFlow()
-            releaseJob = null
         }
     }
 
@@ -507,18 +623,36 @@ class MacOsReleaseViewModel(
         )
     }
 
-    private suspend fun regenerateIcons(root: String): Boolean {
+    private fun findSourceIcon(root: String): String? {
+        if (_state.value.customIconPath.isNotEmpty() &&
+            fileSystemService.exists(_state.value.customIconPath) &&
+            fileSystemService.length(_state.value.customIconPath) > 0
+        ) {
+            return _state.value.customIconPath
+        }
+
         val iconPaths = listOf(
             "$root/app/desktopApp/src/main/resources/icon.png",
             "$root/composeApp/src/desktopMain/icons/icon.png",
             "$root/composeApp/src/desktopMain/resources/icon.png",
-            "$root/src/main/resources/icon.png"
+            "$root/src/main/resources/icon.png",
+            // Fallbacks to Android icons
+            "$root/composeApp/src/androidMain/res/mipmap-xxxhdpi/ic_launcher.png",
+            "$root/composeApp/src/androidMain/res/mipmap-xxxhdpi/ic_launcher.webp",
+            "$root/app/androidApp/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+            "$root/app/androidApp/src/main/res/mipmap-xxxhdpi/ic_launcher.webp"
         )
 
-        val iconPng = iconPaths.firstOrNull { fileSystemService.exists(it) }
+        return iconPaths.firstOrNull {
+            fileSystemService.exists(it) && fileSystemService.length(it) > 0
+        }
+    }
+
+    private suspend fun regenerateIcons(root: String): Boolean {
+        val iconPng = findSourceIcon(root)
         if (iconPng == null) {
             val errorMsg =
-                "Could not locate icon.png in any expected directory (e.g., composeApp/src/desktopMain/icons/icon.png)"
+                "Could not locate a valid icon.png or fallback icon in the project. Please select one manually."
             appendLog(errorMsg, LogType.Error)
             _state.update {
                 it.copy(
@@ -532,33 +666,44 @@ class MacOsReleaseViewModel(
         appendLog("Regenerating icon.icns from $iconPng...")
         val resourcesDir = iconPng.substringBeforeLast("/")
         val iconsetDir = "$resourcesDir/icon.iconset"
-        executeCommand(listOf("mkdir", "-p", iconsetDir))
+        executeCommand(listOf("mkdir", "-p", iconsetDir), logCommand = true)
 
         val sizes = listOf(16, 32, 128, 256, 512)
         for (size in sizes) {
-            executeCommand(
+            val exit1 = executeCommand(
                 listOf(
                     "sips",
+                    "-s",
+                    "format",
+                    "png",
                     "-z",
                     "$size",
                     "$size",
                     iconPng,
                     "--out",
                     "$iconsetDir/icon_${size}x$size.png"
-                )
+                ),
+                logCommand = true
             )
+            if (exit1 != 0) return false
+
             val doubleSize = size * 2
-            executeCommand(
+            val exit2 = executeCommand(
                 listOf(
                     "sips",
+                    "-s",
+                    "format",
+                    "png",
                     "-z",
                     "$doubleSize",
                     "$doubleSize",
                     iconPng,
                     "--out",
                     "$iconsetDir/icon_${size}x$size@2x.png"
-                )
+                ),
+                logCommand = true
             )
+            if (exit2 != 0) return false
         }
 
         // Verify dimensions of the generated files
@@ -571,7 +716,8 @@ class MacOsReleaseViewModel(
                 "-g",
                 "pixelHeight",
                 "$iconsetDir/icon_512x512@2x.png"
-            )
+            ),
+            logCommand = true
         )
 
         val targetIcns = "$resourcesDir/icon.icns"
@@ -583,16 +729,17 @@ class MacOsReleaseViewModel(
                 iconsetDir,
                 "-o",
                 targetIcns
-            )
+            ),
+            logCommand = true
         )
-        executeCommand(listOf("rm", "-rf", iconsetDir))
+        executeCommand(listOf("rm", "-rf", iconsetDir), logCommand = true)
 
         if (exitCode == 0) {
             appendLog("Icon successfully generated at $targetIcns")
             // Verify final .icns by extracting it back to a temp folder
             val verifyDir = "/tmp/verify.iconset"
-            executeCommand(listOf("rm", "-rf", verifyDir))
-            executeCommand(listOf("mkdir", "-p", verifyDir))
+            executeCommand(listOf("rm", "-rf", verifyDir), logCommand = true)
+            executeCommand(listOf("mkdir", "-p", verifyDir), logCommand = true)
             executeCommand(
                 listOf(
                     "iconutil",
@@ -601,7 +748,8 @@ class MacOsReleaseViewModel(
                     targetIcns,
                     "-o",
                     verifyDir
-                )
+                ),
+                logCommand = true
             )
             appendLog("Verification: Extracting 512x512@2x layer from final .icns...")
             executeCommand(
@@ -612,9 +760,10 @@ class MacOsReleaseViewModel(
                     "-g",
                     "pixelHeight",
                     "$verifyDir/icon_512x512@2x.png"
-                )
+                ),
+                logCommand = true
             )
-            executeCommand(listOf("rm", "-rf", verifyDir))
+            executeCommand(listOf("rm", "-rf", verifyDir), logCommand = true)
         }
 
         return exitCode == 0
@@ -625,7 +774,10 @@ class MacOsReleaseViewModel(
             "$root/app/desktopApp/src/main/resources/icon.icns",
             "$root/composeApp/src/desktopMain/icons/icon.icns",
             "$root/composeApp/src/desktopMain/resources/icon.icns",
-            "$root/src/main/resources/icon.icns"
+            "$root/src/main/resources/icon.icns",
+            // Also check Android resource folders if we regenerated there
+            "$root/composeApp/src/androidMain/res/mipmap-xxxhdpi/icon.icns",
+            "$root/app/androidApp/src/main/res/mipmap-xxxhdpi/icon.icns"
         )
         return iconPaths.firstOrNull { fileSystemService.exists(it) }
     }
@@ -635,7 +787,7 @@ class MacOsReleaseViewModel(
         val identity = _state.value.selectedIdentity
         val installerIdentity = _state.value.selectedInstallerIdentity
 
-        appendLog("Step 4/10: Locating app bundle...")
+        appendLog("Locating app bundle...")
         val appPath = findAppBundle(root)
         if (appPath == null) {
             val errorMsg =
@@ -654,6 +806,12 @@ class MacOsReleaseViewModel(
 
         // Fix: Ensure the icon in the bundle is the one we regenerated and has all sizes
         val infoPlist = "$appPath/Contents/Info.plist"
+        
+        // Remove problematic subcomponents that break codesigning
+        appendLog("Cleaning bundle subcomponents...")
+        executeCommand(listOf("rm", "-f", "$appPath/Contents/app.provisionprofile"), logCommand = true)
+        executeCommand(listOf("rm", "-rf", "$appPath/Contents/_CodeSignature"), logCommand = true)
+
         var bundledIconName = ""
         processService.execute(
             listOf(
@@ -677,14 +835,15 @@ class MacOsReleaseViewModel(
                         "cp",
                         sourceIcons,
                         "$appPath/Contents/Resources/$bundledIconName"
-                    )
+                    ),
+                    logCommand = true
                 )
 
                 // Final Checkpoint 3: Verify the icon in the bundle
                 appendLog("Verifying icon inside .app bundle...")
                 val bundleVerifyDir = "/tmp/verify_bundle_icon.iconset"
-                executeCommand(listOf("rm", "-rf", bundleVerifyDir))
-                executeCommand(listOf("mkdir", "-p", bundleVerifyDir))
+                executeCommand(listOf("rm", "-rf", bundleVerifyDir), logCommand = true)
+                executeCommand(listOf("mkdir", "-p", bundleVerifyDir), logCommand = true)
                 executeCommand(
                     listOf(
                         "iconutil",
@@ -693,7 +852,8 @@ class MacOsReleaseViewModel(
                         "$appPath/Contents/Resources/$bundledIconName",
                         "-o",
                         bundleVerifyDir
-                    )
+                    ),
+                    logCommand = true
                 )
                 executeCommand(
                     listOf(
@@ -703,9 +863,10 @@ class MacOsReleaseViewModel(
                         "-g",
                         "pixelHeight",
                         "$bundleVerifyDir/icon_512x512@2x.png"
-                    )
+                    ),
+                    logCommand = true
                 )
-                executeCommand(listOf("rm", "-rf", bundleVerifyDir))
+                executeCommand(listOf("rm", "-rf", bundleVerifyDir), logCommand = true)
             }
         }
 
@@ -716,15 +877,33 @@ class MacOsReleaseViewModel(
                 "-c",
                 "Set :LSMinimumSystemVersion 12.0",
                 infoPlist
-            )
+            ),
+            logCommand = true
         )
+
+        // Sync CFBundleVersion with versionCode from project if possible
+        val detectedVersionCode = getVersionCode(root)
+        if (detectedVersionCode != null) {
+            appendLog("Syncing CFBundleVersion with detected versionCode: $detectedVersionCode")
+            executeCommand(
+                listOf(
+                    "/usr/libexec/PlistBuddy",
+                    "-c",
+                    "Set :CFBundleVersion $detectedVersionCode",
+                    infoPlist
+                ),
+                logCommand = true
+            )
+        }
+
         executeCommand(
             listOf(
                 "/usr/libexec/PlistBuddy",
                 "-c",
                 "Delete :ITSAppUsesNonExemptEncryption",
                 infoPlist
-            )
+            ),
+            logCommand = true
         )
         executeCommand(
             listOf(
@@ -732,7 +911,8 @@ class MacOsReleaseViewModel(
                 "-c",
                 "Add :ITSAppUsesNonExemptEncryption bool false",
                 infoPlist
-            )
+            ),
+            logCommand = true
         )
 
         // Apply selected category
@@ -743,7 +923,8 @@ class MacOsReleaseViewModel(
                 "-c",
                 "Set :LSApplicationCategoryType ${_state.value.selectedCategory}",
                 infoPlist
-            )
+            ),
+            logCommand = true
         )
         if (categoryExit != 0) {
             executeCommand(
@@ -752,7 +933,8 @@ class MacOsReleaseViewModel(
                     "-c",
                     "Add :LSApplicationCategoryType string ${_state.value.selectedCategory}",
                     infoPlist
-                )
+                ),
+                logCommand = true
             )
         }
 
@@ -768,19 +950,21 @@ class MacOsReleaseViewModel(
                     "-d",
                     "com.apple.quarantine",
                     provProfile
-                )
+                ),
+                logCommand = true
             )
-            appendLog("Step 6/10: Embedding provisioning profile from $provProfile...")
+            appendLog("Embedding provisioning profile from $provProfile...")
             executeCommand(
                 listOf(
                     "cp",
                     provProfile,
                     "$appPath/Contents/embedded.provisionprofile"
-                )
+                ),
+                logCommand = true
             )
         }
 
-        appendLog("Step 5/10: Removing quarantine attributes from $appPath...")
+        appendLog("Removing quarantine attributes from $appPath...")
         executeCommand(
             listOf(
                 "xattr",
@@ -788,10 +972,11 @@ class MacOsReleaseViewModel(
                 "-d",
                 "com.apple.quarantine",
                 appPath
-            )
+            ),
+            logCommand = true
         )
 
-        appendLog("Step 7/10: Deep signing subcomponents...")
+        appendLog("Deep signing subcomponents...")
         executeCommand(
             listOf(
                 "find",
@@ -819,10 +1004,11 @@ class MacOsReleaseViewModel(
                 "--force",
                 "{}",
                 "+"
-            )
+            ),
+            logCommand = true
         )
 
-        appendLog("Step 8/10: Signing main executable...")
+        appendLog("Signing main executable...")
         val entitlementsPath =
             "$root$subproject/src/desktopMain/entitlements/entitlements.plist"
         val childEntitlementsPath =
@@ -845,7 +1031,7 @@ class MacOsReleaseViewModel(
                 listOf("--entitlements", childEntitlementsPath)
             )
             cmd.add(jspawnhelper)
-            executeCommand(cmd)
+            executeCommand(cmd, logCommand = true)
         }
 
         if (fileSystemService.exists(entitlementsPath)) {
@@ -862,7 +1048,8 @@ class MacOsReleaseViewModel(
                     entitlementsPath,
                     "--force",
                     "$appPath/Contents/MacOS/$appName"
-                )
+                ),
+                logCommand = true
             )
             executeCommand(
                 listOf(
@@ -877,7 +1064,8 @@ class MacOsReleaseViewModel(
                     entitlementsPath,
                     "--force",
                     appPath
-                )
+                ),
+                logCommand = true
             )
         } else {
             executeCommand(
@@ -891,11 +1079,12 @@ class MacOsReleaseViewModel(
                     "runtime",
                     "--force",
                     appPath
-                )
+                ),
+                logCommand = true
             )
         }
 
-        appendLog("Step 9/10: Verifying signature and packaging...")
+        appendLog("Verifying signature and packaging...")
         executeCommand(
             listOf(
                 "codesign",
@@ -904,12 +1093,13 @@ class MacOsReleaseViewModel(
                 "--strict",
                 "--verbose=4",
                 appPath
-            )
+            ),
+            logCommand = true
         )
 
         val pkgDir = appPath.substringBeforeLast("/app") + "/pkg"
         val pkgOutput = "$pkgDir/$appName-manual.pkg"
-        executeCommand(listOf("mkdir", "-p", pkgDir))
+        executeCommand(listOf("mkdir", "-p", pkgDir), logCommand = true)
         val pkgExit = executeCommand(
             listOf(
                 "productbuild",
@@ -919,7 +1109,8 @@ class MacOsReleaseViewModel(
                 "--sign",
                 installerIdentity,
                 pkgOutput
-            )
+            ),
+            logCommand = true
         )
 
         if (pkgExit != 0) {
@@ -932,14 +1123,9 @@ class MacOsReleaseViewModel(
             return
         }
 
-        appendLog("Step 10/10: Submitting to App Store...")
+        appendLog("Submitting to App Store...")
 
-        val home = try {
-            System.getProperty("user.home")
-        } catch (e: Exception) {
-            println("Error getting user.home: ${e.message}")
-            ""
-        }
+        val home = fileSystemService.getUserHome() ?: ""
         val currentKeyPath = _state.value.apiKeyPath
         val keyFilename = currentKeyPath.substringAfterLast("/")
 
@@ -1038,6 +1224,20 @@ class MacOsReleaseViewModel(
         }
     }
 
+    private fun getVersionCode(root: String): String? {
+        val libsVersionsFile = "$root/gradle/libs.versions.toml"
+        if (fileSystemService.exists(libsVersionsFile)) {
+            val content = fileSystemService.readFile(libsVersionsFile) ?: ""
+            val match = Regex("""versionCode\s*=\s*["']([^"']+)["']""").find(content)
+            if (match != null) return match.groupValues[1]
+            
+            // Try without quotes just in case
+            val matchNoQuotes = Regex("""versionCode\s*=\s*(\d+)""").find(content)
+            if (matchNoQuotes != null) return matchNoQuotes.groupValues[1]
+        }
+        return null
+    }
+
     private suspend fun getBundleId(appPath: String): String? {
         var bundleId: String? = null
         processService.execute(
@@ -1054,12 +1254,22 @@ class MacOsReleaseViewModel(
         return bundleId
     }
 
-    private suspend fun executeCommand(command: List<String>): Int {
+    private suspend fun executeCommand(
+        command: List<String>,
+        directory: String? = null,
+        logCommand: Boolean = false
+    ): Int {
+        if (logCommand) {
+            appendLog("Executing: ${command.joinToString(" ")}")
+        }
         var exitCode = -1
-        processService.execute(command, directory = _state.value.projectRoot)
+        processService.execute(command, directory ?: _state.value.projectRoot)
             .collect { output ->
                 when (output) {
-                    is ProcessOutput.Stdout -> appendLog(output.line)
+                    is ProcessOutput.Stdout -> {
+                        if (logCommand) appendLog(output.line)
+                    }
+
                     is ProcessOutput.Stderr -> appendLog(
                         output.line,
                         LogType.Error
