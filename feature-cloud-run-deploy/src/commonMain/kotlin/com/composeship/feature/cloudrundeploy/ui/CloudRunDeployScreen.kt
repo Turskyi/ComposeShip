@@ -58,6 +58,7 @@ import com.composeship.core.domain.model.DeploySource
 import com.composeship.core.domain.model.LogType
 import com.composeship.core.domain.platform.PlatformType
 import com.composeship.core.domain.platform.getPlatform
+import com.composeship.core.ui.LinkifyText
 import com.composeship.core.ui.TechnicalGridBackground
 import composeship.core.generated.resources.Res
 import composeship.core.generated.resources.browse
@@ -69,6 +70,7 @@ import composeship.core.generated.resources.gcloud_project_id_info_text
 import composeship.core.generated.resources.gcloud_project_id_info_title
 import composeship.core.generated.resources.gcloud_project_id_label
 import composeship.core.generated.resources.logs
+import composeship.core.generated.resources.no_services_found
 import composeship.core.generated.resources.ok
 import composeship.core.generated.resources.project_root_label
 import composeship.core.generated.resources.region_label
@@ -88,6 +90,7 @@ fun CloudRunDeployScreen(
     val clipboardManager = LocalClipboardManager.current
     val platform = remember { getPlatform() }
     var showInfoDialog by remember { mutableStateOf(false) }
+    var servicesExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         if (platform.type != PlatformType.DESKTOP) {
@@ -101,7 +104,7 @@ fun CloudRunDeployScreen(
         AlertDialog(
             onDismissRequest = { showInfoDialog = false },
             title = { Text(infoDialogTitle) },
-            text = { Text(infoDialogText) },
+            text = { LinkifyText(infoDialogText) },
             confirmButton = {
                 TextButton(onClick = { showInfoDialog = false }) {
                     Text(stringResource(Res.string.ok))
@@ -283,67 +286,69 @@ fun CloudRunDeployScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                var servicesExpanded by remember { mutableStateOf(false) }
-
-                ExposedDropdownMenuBox(
-                    expanded = servicesExpanded,
-                    onExpandedChange = {
-                        if (state.gcloudProjectId.isNotEmpty()) {
-                            servicesExpanded = it
-                            if (it) viewModel.fetchServices()
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedTextField(
-                        value = state.serviceName,
-                        onValueChange = { viewModel.onServiceNameChanged(it) },
-                        enabled = !state.isDeploying,
-                        label = { Text(stringResource(Res.string.service_name_label)) },
-                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true).fillMaxWidth(),
-                        trailingIcon = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (state.isFetchingServices) {
-                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                } else {
-                                    Icon(Icons.Default.ExpandMore, contentDescription = null)
-                                }
-                                if (state.availableServices.size > 1 || state.serviceFetchFailed) {
-                                    val serviceTitle = stringResource(Res.string.service_name_info_title)
-                                    val serviceText = stringResource(Res.string.service_name_info_text)
-                                    IconButton(
-                                        onClick = {
-                                            infoDialogTitle = serviceTitle
-                                            infoDialogText = serviceText
-                                            showInfoDialog = true
-                                        }
-                                    ) {
-                                        Icon(imageVector = Icons.Default.Info, contentDescription = "Service Name Info")
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                    ExposedDropdownMenuBox(
+                        expanded = servicesExpanded,
+                        onExpandedChange = {
+                            if (state.gcloudProjectId.isNotEmpty()) {
+                                servicesExpanded = it
+                                if (it) viewModel.fetchServices()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedTextField(
+                            value = state.serviceName,
+                            onValueChange = { viewModel.onServiceNameChanged(it) },
+                            enabled = !state.isDeploying,
+                            label = { Text(stringResource(Res.string.service_name_label)) },
+                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, true).fillMaxWidth(),
+                            trailingIcon = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (state.isFetchingServices) {
+                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        Icon(Icons.Default.ExpandMore, contentDescription = null)
                                     }
+                                    Spacer(modifier = Modifier.width(40.dp))
                                 }
                             }
-                        }
-                    )
+                        )
 
-                    ExposedDropdownMenu(
-                        expanded = servicesExpanded,
-                        onDismissRequest = { servicesExpanded = false }
+                        ExposedDropdownMenu(
+                            expanded = servicesExpanded,
+                            onDismissRequest = { servicesExpanded = false }
+                        ) {
+                            if (state.availableServices.isEmpty() && !state.isFetchingServices) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.no_services_found)) },
+                                    onClick = { servicesExpanded = false }
+                                )
+                            }
+                            state.availableServices.forEach { service ->
+                                DropdownMenuItem(
+                                    text = { Text(service) },
+                                    onClick = {
+                                        viewModel.onServiceNameChanged(service)
+                                        servicesExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    val serviceTitle = stringResource(Res.string.service_name_info_title)
+                    val serviceText = stringResource(Res.string.service_name_info_text)
+                    IconButton(
+                        onClick = {
+                            infoDialogTitle = serviceTitle
+                            infoDialogText = serviceText
+                            showInfoDialog = true
+                            servicesExpanded = false
+                        },
+                        modifier = Modifier.padding(end = 4.dp)
                     ) {
-                        if (state.availableServices.isEmpty() && !state.isFetchingServices) {
-                            DropdownMenuItem(
-                                text = { Text("No services found. Type a new name to create one.") },
-                                onClick = { servicesExpanded = false }
-                            )
-                        }
-                        state.availableServices.forEach { service ->
-                            DropdownMenuItem(
-                                text = { Text(service) },
-                                onClick = {
-                                    viewModel.onServiceNameChanged(service)
-                                    servicesExpanded = false
-                                }
-                            )
-                        }
+                        Icon(imageVector = Icons.Default.Info, contentDescription = "Service Name Info")
                     }
                 }
 

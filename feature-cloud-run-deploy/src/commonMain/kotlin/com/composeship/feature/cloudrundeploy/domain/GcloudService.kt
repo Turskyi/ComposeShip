@@ -8,7 +8,8 @@ interface GcloudService {
         projectRoot: String,
         gcloudProjectId: String,
         region: String,
-        serviceName: String
+        serviceName: String,
+        envVars: Map<String, String> = emptyMap()
     ): Flow<ProcessOutput>
 
     fun deployFromGitHub(
@@ -16,7 +17,8 @@ interface GcloudService {
         githubBranch: String,
         gcloudProjectId: String,
         region: String,
-        serviceName: String
+        serviceName: String,
+        envVars: Map<String, String> = emptyMap()
     ): Flow<ProcessOutput>
 
     fun getCurrentProjectId(): Flow<ProcessOutput>

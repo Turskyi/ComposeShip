@@ -50,6 +50,26 @@
     <string name="error_not_gradle_project">Це не проект Gradle (відсутні файли settings/build)</string>
     <string name="error_missing_gradlew">Відсутній gradlew wrapper</string>
 
+    <string name="cloud_run_deploy_title">Google Cloud Run Deployer</string>
+    <string name="gcloud_project_id_label">GCP Project ID</string>
+    <string name="region_label">Регіон</string>
+    <string name="service_name_label">Назва сервісу</string>
+    <string name="deploy">Розгорнути в Cloud Run</string>
+    <string name="deploying">Розгортання...</string>
+    <string name="deployed_successfully">Розгорнуто успішно</string>
+    <string name="deploy_step_1_title">Конфігурація розгортання</string>
+
+    <string name="gcloud_project_id_info_title">GCP Project ID</string>
+    <string name="gcloud_project_id_info_text">Перейдіть до панелі керування (https://console.cloud.google.com/home/dashboard), і ви побачите \"Project ID\" у картці інформації про проект у верхньому лівому куті.</string>
+
+    <string name="service_name_info_title">Назва сервісу</string>
+    <string name="service_name_info_text">Це ідентифікатор вашої програми в Cloud Run.\n\n• За замовчуванням він походить від назви папки вашого проекту.\n• МАЄ збігатися з назвою в консолі GCP, щоб оновити існуючу програму.\n• Якщо ви вкажете нову назву, буде створено новий сервіс.\n• Примітка: Сервіси залежать від регіону. Якщо ви переносите проект з іншого регіону, ми рекомендуємо вказати тут ту саму назву, щоб зберегти структуру проекту.\n\nПеревірте або знайдіть правильну назву за посиланням: https://console.cloud.google.com/run</string>
+    <string name="no_services_found">У цьому регіоні не знайдено жодного сервісу. Введіть нову назву (або існуючу назву з іншого регіону), щоб продовжити.</string>
+
+    <string name="firebase_deploy_title">Firebase Hosting Deployer</string>
+    <string name="firebase_deploy_desc">Розгорніть вашу WASM веб-програму на Firebase Hosting.</string>
+    <string name="firebase_deploy_button">Розгорнути на Firebase</string>
+
     <string name="feature_macos">macOS</string>
     <string name="feature_cloud_run">Cloud Run</string>
     <string name="feature_firebase">Firebase</string>

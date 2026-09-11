@@ -73,7 +73,8 @@
     <string name="gcloud_project_id_info_text">Go to the Dashboard (https://console.cloud.google.com/home/dashboard), and you\'ll see \"Project ID\" in the Project Info card at the top left.</string>
 
     <string name="service_name_info_title">Service Name</string>
-    <string name="service_name_info_text">This is the identifier for your app in Cloud Run. \n\n• MUST match the name in the GCP Console to update an existing app. \n• If you provide a new name, a new service will be created.\n\nVerify names at: https://console.cloud.google.com/run</string>
+    <string name="service_name_info_text">This is the identifier for your app in Cloud Run.\n\n• By default, it is derived from your project's directory name.\n• MUST match the name in the GCP Console to update an existing app.\n• If you provide a new name, a new service will be created.\n• Note: Services are region-specific. If you are migrating from another region, we recommend typing the exact same name here to keep your project organized.\n\nVerify or find the correct name at: https://console.cloud.google.com/run</string>
+    <string name="no_services_found">No services found in this region. Type a new name (or an existing name from another region) to proceed.</string>
 
     <string name="firebase_deploy_title">Firebase Hosting Deployer</string>
     <string name="firebase_deploy_desc">Deploy your WASM web application to Firebase Hosting.</string>

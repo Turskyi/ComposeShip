@@ -10,7 +10,8 @@ class PlaceholderGcloudService : GcloudService {
         projectRoot: String,
         gcloudProjectId: String,
         region: String,
-        serviceName: String
+        serviceName: String,
+        envVars: Map<String, String>
     ): Flow<ProcessOutput> = flow {
         emit(ProcessOutput.Stdout("Deployment from local path is not supported on this platform."))
         emit(ProcessOutput.Complete(1))
@@ -21,7 +22,8 @@ class PlaceholderGcloudService : GcloudService {
         githubBranch: String,
         gcloudProjectId: String,
         region: String,
-        serviceName: String
+        serviceName: String,
+        envVars: Map<String, String>
     ): Flow<ProcessOutput> = flow {
         emit(ProcessOutput.Stdout("GitHub deployment is coming soon for Mobile/Web! Currently it requires the gcloud CLI (Desktop)."))
         emit(ProcessOutput.Complete(1))

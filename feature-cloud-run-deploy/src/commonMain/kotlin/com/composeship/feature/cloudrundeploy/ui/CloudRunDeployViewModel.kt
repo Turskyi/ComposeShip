@@ -51,6 +51,7 @@ class CloudRunDeployViewModel(
 
     fun onRegionChanged(region: String) {
         _state.update { it.copy(region = region) }
+        fetchServices()
     }
 
     fun fetchServices() {
@@ -157,11 +158,35 @@ class CloudRunDeployViewModel(
             return
         }
 
+        loadEnvVars(path)
+
         _state.update {
             it.copy(
                 isProjectValid = true,
                 projectValidationError = null
             )
+        }
+    }
+
+    private fun loadEnvVars(path: String) {
+        val envPath = "$path/server/.env"
+        if (fileSystemService.exists(envPath)) {
+            val content = fileSystemService.readFile(envPath) ?: return
+            val vars = mutableMapOf<String, String>()
+            content.lines().forEach { line ->
+                val trimmed = line.trim()
+                if (trimmed.isNotEmpty() && !trimmed.startsWith("#")) {
+                    // Remove trailing comments
+                    val cleanLine = trimmed.substringBefore(" #").trim()
+                    val parts = cleanLine.split("=", limit = 2)
+                    if (parts.size == 2) {
+                        vars[parts[0].trim()] = parts[1].trim()
+                    }
+                }
+            }
+            _state.update { it.copy(envVars = vars) }
+        } else {
+            _state.update { it.copy(envVars = emptyMap()) }
         }
     }
 
@@ -188,7 +213,8 @@ class CloudRunDeployViewModel(
                     projectRoot = currentState.projectRoot,
                     gcloudProjectId = currentState.gcloudProjectId,
                     region = currentState.region,
-                    serviceName = currentState.serviceName
+                    serviceName = currentState.serviceName,
+                    envVars = currentState.envVars
                 )
             } else {
                 gcloudService.deployFromGitHub(
@@ -196,7 +222,8 @@ class CloudRunDeployViewModel(
                     githubBranch = currentState.githubBranch,
                     gcloudProjectId = currentState.gcloudProjectId,
                     region = currentState.region,
-                    serviceName = currentState.serviceName
+                    serviceName = currentState.serviceName,
+                    envVars = currentState.envVars
                 )
             }
 

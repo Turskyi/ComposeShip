@@ -14,8 +14,30 @@ class DesktopGcloudService(
         projectRoot: String,
         gcloudProjectId: String,
         region: String,
-        serviceName: String
+        serviceName: String,
+        envVars: Map<String, String>
     ): Flow<ProcessOutput> = flow {
+        // Check if it's a Gradle project and needs a build
+        if (java.io.File(projectRoot, "gradlew").exists() && java.io.File(projectRoot, "server").exists()) {
+            emit(ProcessOutput.Stdout("Building Gradle server distribution..."))
+            val gradlew = if (System.getProperty("os.name").lowercase().contains("win")) "gradlew.bat" else "./gradlew"
+            val gradleCommand = listOf(gradlew, ":server:installDist", "--no-daemon")
+
+            var gradleExitCode = -1
+            processService.execute(gradleCommand, directory = projectRoot).collect { output ->
+                if (output is ProcessOutput.Complete) {
+                    gradleExitCode = output.exitCode
+                } else {
+                    emit(output)
+                }
+            }
+
+            if (gradleExitCode != 0) {
+                emit(ProcessOutput.Error(Exception("Gradle build failed with exit code $gradleExitCode")))
+                return@flow
+            }
+        }
+
         emit(ProcessOutput.Stdout("Building and pushing container..."))
         
         val buildCommand = listOf(
@@ -37,15 +59,25 @@ class DesktopGcloudService(
 
         if (buildExitCode == 0) {
             emit(ProcessOutput.Stdout("Deploying to Cloud Run..."))
-            val deployCommand = listOf(
+            val deployCommand = mutableListOf(
                 "gcloud", "run", "deploy", serviceName,
                 "--image", "gcr.io/$gcloudProjectId/$serviceName",
                 "--platform", "managed",
                 "--region", region,
                 "--project", gcloudProjectId,
                 "--verbosity", "info",
-                "--allow-unauthenticated"
+                "--allow-unauthenticated",
+                "--memory", "1Gi",
+                "--cpu", "1",
+                "--timeout", "300"
             )
+
+            if (envVars.isNotEmpty()) {
+                val envString = envVars.entries.joinToString(",") { "${it.key}=${it.value}" }
+                deployCommand.add("--set-env-vars=$envString")
+            }
+
+            emit(ProcessOutput.Stdout("Executing: ${deployCommand.joinToString(" ")}"))
             emitAll(processService.execute(deployCommand, directory = projectRoot))
         } else if (buildExitCode != -1) {
             emit(ProcessOutput.Complete(buildExitCode))
@@ -57,7 +89,8 @@ class DesktopGcloudService(
         githubBranch: String,
         gcloudProjectId: String,
         region: String,
-        serviceName: String
+        serviceName: String,
+        envVars: Map<String, String>
     ): Flow<ProcessOutput> = flow {
         emit(ProcessOutput.Stdout("Deploying from GitHub: $githubRepoUrl (branch: $githubBranch)..."))
         
@@ -71,7 +104,7 @@ class DesktopGcloudService(
         // A better agnostic way is 'gcloud alpha builds submit --repo=...' if using the new repositories feature.
         
         // For now, let's use a command that works if the repo is already connected to GCP via 'Repositories' (2nd gen)
-        val deployCommand = listOf(
+        val deployCommand = mutableListOf(
             "gcloud", "run", "deploy", serviceName,
             "--source", githubRepoUrl, // Some gcloud versions support URL here, or we use Cloud Build API
             "--platform", "managed",
@@ -80,6 +113,12 @@ class DesktopGcloudService(
             "--verbosity", "info",
             "--allow-unauthenticated"
         )
+
+        if (envVars.isNotEmpty()) {
+            val envString = envVars.entries.joinToString(",") { "${it.key}=${it.value}" }
+            deployCommand.add("--set-env-vars=$envString")
+        }
+
         emitAll(processService.execute(deployCommand))
     }
 
