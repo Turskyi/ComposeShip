@@ -87,4 +87,24 @@
     <string name="theme_system">Системна</string>
 
     <string name="not_supported_on_web">Не підтримується у Веб</string>
+
+    <string name="wear_package_name_label">Назва пакета</string>
+    <string name="wear_package_name_info_title">Назва пакета</string>
+    <string name="wear_package_name_info_text">Унікальний ідентифікатор вашої програми в Google Play Store (наприклад, com.example.app). Це потрібно для того, щоб Fastlane знав, який запис програми оновити.</string>
+
+    <string name="wear_keystore_path_label">Шлях до Keystore</string>
+    <string name="wear_keystore_path_info_title">Шлях до Keystore</string>
+    <string name="wear_keystore_path_info_text">Шлях до вашого файлу keystore для підпису Android (.jks або .keystore). Інструмент використовує це для підпису AAB перед завантаженням, якщо він ще не підписаний.</string>
+
+    <string name="wear_keystore_alias_label">Аліас Keystore</string>
+    <string name="wear_keystore_alias_info_title">Аліас Keystore</string>
+    <string name="wear_keystore_alias_info_text">Аліас, який ви надали своєму ключу підпису під час створення сховища ключів (keystore).</string>
+
+    <string name="wear_save_credentials_label">Зберегти облікові дані</string>
+    <string name="wear_save_credentials_info_title">Зберегти облікові дані</string>
+    <string name="wear_save_credentials_info_text">Зберігає ці налаштування локально, щоб вам не довелося вводити їх знову для майбутніх випусків. Вони надійно зберігаються на вашому комп'ютері.</string>
+
+    <string name="wear_service_account_label">Шлях до JSON сервісного акаунта</string>
+    <string name="wear_service_account_info_title">Сервісний акаунт</string>
+    <string name="wear_service_account_info_text">Файл ключа JSON вашого сервісного акаунта Google Play Console. Це дозволяє інструменту автоматично проходити автентифікацію та завантажувати AAB у Google Play.</string>
 </resources>

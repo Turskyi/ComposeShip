@@ -40,16 +40,24 @@ class WearReleaseViewModel(
 
     private fun validateProject(path: String) {
         if (path.isEmpty()) return
-        val settingsExists = fileSystemService.exists("$path/pubspec.yaml") || fileSystemService.exists("$path/android")
+        val settingsExists =
+            fileSystemService.exists("$path/pubspec.yaml") || fileSystemService.exists(
+                "$path/android"
+            )
         _state.update { it.copy(isProjectValid = settingsExists) }
         // If project looks valid and packageName not provided, try to auto-detect it
         if (settingsExists && _state.value.packageName.isEmpty()) {
             try {
                 val detected = detectPackageName(path)
                 if (!detected.isNullOrEmpty()) {
-                    _state.update { it.copy(packageName = detected, lastOutputLines = it.lastOutputLines + "Auto-detected package: $detected") }
+                    _state.update {
+                        it.copy(
+                            packageName = detected,
+                            lastOutputLines = it.lastOutputLines + "Auto-detected package: $detected"
+                        )
+                    }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // ignore detection errors
             }
         }
@@ -72,7 +80,12 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
 Виправлення помилок та покращення продуктивності. Оновлення містить невеликі виправлення та підвищує стабільність роботи додатка.
 </uk>
 """.trimIndent()
-            _state.update { it.copy(releaseNotes = defaultNotes, lastOutputLines = it.lastOutputLines + "Inserted default release notes.") }
+            _state.update {
+                it.copy(
+                    releaseNotes = defaultNotes,
+                    lastOutputLines = it.lastOutputLines + "Inserted default release notes."
+                )
+            }
         }
     }
 
@@ -87,9 +100,13 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
         for (p in manifestPaths) {
             try {
                 val content = fileSystemService.readFile(p) ?: continue
-                val m = Regex("<manifest[^>]*\\bpackage\\s*=\\s*\"(.*?)\"").find(content)
+                val m =
+                    Regex("<manifest[^>]*\\bpackage\\s*=\\s*\"(.*?)\"").find(
+                        content
+                    )
                 if (m != null) return m.groupValues[1]
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
 
         // 2) build.gradle (applicationId) or build.gradle.kts (namespace)
@@ -104,10 +121,13 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
             try {
                 val content = fileSystemService.readFile(p) ?: continue
                 // applicationId 'com.example.app' or "com.example.app"
-                Regex("applicationId\\s+['\"](.*?)['\"]").find(content)?.let { return it.groupValues[1] }
+                Regex("applicationId\\s+['\"](.*?)['\"]").find(content)
+                    ?.let { return it.groupValues[1] }
                 // namespace = "com.example.app"
-                Regex("namespace\\s*=\\s*['\"](.*?)['\"]").find(content)?.let { return it.groupValues[1] }
-            } catch (_: Exception) {}
+                Regex("namespace\\s*=\\s*['\"](.*?)['\"]").find(content)
+                    ?.let { return it.groupValues[1] }
+            } catch (_: Exception) {
+            }
         }
 
         return null
@@ -120,14 +140,52 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
         }
 
         viewModelScope.launch {
-            _state.update { it.copy(buildInProgress = true, lastOutputLines = listOf("Starting flutter build...")) }
-            processService.execute(listOf("flutter", "build", "appbundle", "--flavor", "wear", "--release"), projectRoot)
+            _state.update {
+                it.copy(
+                    buildInProgress = true,
+                    lastOutputLines = listOf("Starting flutter build...")
+                )
+            }
+            processService.execute(
+                listOf(
+                    "flutter",
+                    "build",
+                    "appbundle",
+                    "--flavor",
+                    "wear",
+                    "--release"
+                ), projectRoot
+            )
                 .collect { output ->
                     when (output) {
-                        is ProcessOutput.Stdout -> _state.update { it.copy(lastOutputLines = (it.lastOutputLines + output.line).takeLast(200)) }
-                        is ProcessOutput.Stderr -> _state.update { it.copy(lastOutputLines = (it.lastOutputLines + output.line).takeLast(200)) }
-                        is ProcessOutput.Complete -> _state.update { it.copy(buildInProgress = false) }
-                        is ProcessOutput.Error -> _state.update { it.copy(buildInProgress = false, lastOutputLines = it.lastOutputLines + "ERROR: ${output.throwable.message}") }
+                        is ProcessOutput.Stdout -> _state.update {
+                            it.copy(
+                                lastOutputLines = (it.lastOutputLines + output.line).takeLast(
+                                    200
+                                )
+                            )
+                        }
+
+                        is ProcessOutput.Stderr -> _state.update {
+                            it.copy(
+                                lastOutputLines = (it.lastOutputLines + output.line).takeLast(
+                                    200
+                                )
+                            )
+                        }
+
+                        is ProcessOutput.Complete -> _state.update {
+                            it.copy(
+                                buildInProgress = false
+                            )
+                        }
+
+                        is ProcessOutput.Error -> _state.update {
+                            it.copy(
+                                buildInProgress = false,
+                                lastOutputLines = it.lastOutputLines + "ERROR: ${output.throwable.message}"
+                            )
+                        }
                     }
                 }
         }
@@ -141,12 +199,17 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
                 processService.execute(lastTagCmd, projectRoot).collect { o ->
                     if (o is ProcessOutput.Stdout) fromRef = o.line.trim()
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // no tag
                 fromRef = ""
             }
 
-            val logCmd = if (fromRef.isNotEmpty()) listOf("git", "log", "$fromRef..HEAD", "--pretty=format:- %s (%an)")
+            val logCmd = if (fromRef.isNotEmpty()) listOf(
+                "git",
+                "log",
+                "$fromRef..HEAD",
+                "--pretty=format:- %s (%an)"
+            )
             else listOf("git", "log", "--pretty=format:- %s (%an)")
 
             val sb = StringBuilder()
@@ -178,15 +241,34 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
         val ks = svc.getCredential("wear_keystore_path") ?: ""
         val alias = svc.getCredential("wear_keystore_alias") ?: ""
 
-        _state.update { it.copy(serviceAccountPath = sa, packageName = pkg, keystorePath = ks, keystoreAlias = alias) }
+        _state.update {
+            it.copy(
+                serviceAccountPath = sa,
+                packageName = pkg,
+                keystorePath = ks,
+                keystoreAlias = alias
+            )
+        }
     }
 
     fun saveCredentials() {
         viewModelScope.launch {
-            credentialService.saveCredential("wear_service_account", _state.value.serviceAccountPath)
-            credentialService.saveCredential("wear_package_name", _state.value.packageName)
-            credentialService.saveCredential("wear_keystore_path", _state.value.keystorePath)
-            credentialService.saveCredential("wear_keystore_alias", _state.value.keystoreAlias)
+            credentialService.saveCredential(
+                "wear_service_account",
+                _state.value.serviceAccountPath
+            )
+            credentialService.saveCredential(
+                "wear_package_name",
+                _state.value.packageName
+            )
+            credentialService.saveCredential(
+                "wear_keystore_path",
+                _state.value.keystorePath
+            )
+            credentialService.saveCredential(
+                "wear_keystore_alias",
+                _state.value.keystoreAlias
+            )
             _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Credentials saved.") }
         }
     }
@@ -215,7 +297,12 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
         viewModelScope.launch {
             val p = fileSystemService.pickFile("json")
             if (p != null) {
-                _state.update { it.copy(serviceAccountPath = p, lastOutputLines = it.lastOutputLines + "Selected service account: $p") }
+                _state.update {
+                    it.copy(
+                        serviceAccountPath = p,
+                        lastOutputLines = it.lastOutputLines + "Selected service account: $p"
+                    )
+                }
             } else {
                 _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Service account selection canceled.") }
             }
@@ -226,7 +313,12 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
         viewModelScope.launch {
             val p = fileSystemService.pickFile("jks")
             if (p != null) {
-                _state.update { it.copy(keystorePath = p, lastOutputLines = it.lastOutputLines + "Selected keystore: $p") }
+                _state.update {
+                    it.copy(
+                        keystorePath = p,
+                        lastOutputLines = it.lastOutputLines + "Selected keystore: $p"
+                    )
+                }
             } else {
                 _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Keystore selection canceled.") }
             }
@@ -245,20 +337,28 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
         for (p in preferred) {
             try {
                 if (fileSystemService.exists(p)) return p
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
 
         val found = try {
-            fileSystemService.listFiles("$projectRoot").firstOrNull { it.endsWith(".aab") }
-        } catch (e: Exception) { null }
+            fileSystemService.listFiles(projectRoot)
+                .firstOrNull { it.endsWith(".aab") }
+        } catch (_: Exception) {
+            null
+        }
 
         return found?.let { if (it.startsWith("/")) it else "$projectRoot/$it" }
     }
 
-    private suspend fun signAabIfNeeded(projectRoot: String, aabPath: String?): String? {
+    private suspend fun signAabIfNeeded(
+        projectRoot: String,
+        aabPath: String?
+    ): String? {
         if (aabPath == null) return null
         try {
-            val verifyCmd = listOf("jarsigner", "-verify", "-verbose", "-certs", aabPath)
+            val verifyCmd =
+                listOf("jarsigner", "-verify", "-verbose", "-certs", aabPath)
             var alreadySigned = false
             processService.execute(verifyCmd, projectRoot).collect { o ->
                 if (o is ProcessOutput.Stdout && o.line.contains("jar signed.")) {
@@ -280,20 +380,49 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
             var alias = _state.value.keystoreAlias
             if (fileSystemService.exists(kp)) {
                 val content = fileSystemService.readFile(kp) ?: ""
-                storepass = Regex("SIGNING_KEY_RELEASE_PASSWORD=(.*)").find(content)?.groupValues?.get(1) ?: ""
-                keypass = Regex("SIGNING_KEY_RELEASE_KEY_PASSWORD=(.*)").find(content)?.groupValues?.get(1) ?: ""
-                alias = alias.ifEmpty { Regex("SIGNING_KEY_RELEASE_KEY=(.*)").find(content)?.groupValues?.get(1) ?: alias }
+                storepass =
+                    Regex("SIGNING_KEY_RELEASE_PASSWORD=(.*)").find(content)?.groupValues?.get(
+                        1
+                    ) ?: ""
+                keypass =
+                    Regex("SIGNING_KEY_RELEASE_KEY_PASSWORD=(.*)").find(content)?.groupValues?.get(
+                        1
+                    ) ?: ""
+                alias = alias.ifEmpty {
+                    Regex("SIGNING_KEY_RELEASE_KEY=(.*)").find(content)?.groupValues?.get(
+                        1
+                    ) ?: alias
+                }
             }
 
             val cmd = mutableListOf("jarsigner", "-keystore", ks)
-            if (storepass.isNotEmpty()) cmd.addAll(listOf("-storepass", storepass))
+            if (storepass.isNotEmpty()) cmd.addAll(
+                listOf(
+                    "-storepass",
+                    storepass
+                )
+            )
             if (keypass.isNotEmpty()) cmd.addAll(listOf("-keypass", keypass))
             cmd.addAll(listOf(aabPath, alias.ifEmpty { "release" }))
 
             processService.execute(cmd, projectRoot).collect { o ->
                 when (o) {
-                    is ProcessOutput.Stdout -> _state.update { it.copy(lastOutputLines = (it.lastOutputLines + o.line).takeLast(200)) }
-                    is ProcessOutput.Stderr -> _state.update { it.copy(lastOutputLines = (it.lastOutputLines + o.line).takeLast(200)) }
+                    is ProcessOutput.Stdout -> _state.update {
+                        it.copy(
+                            lastOutputLines = (it.lastOutputLines + o.line).takeLast(
+                                200
+                            )
+                        )
+                    }
+
+                    is ProcessOutput.Stderr -> _state.update {
+                        it.copy(
+                            lastOutputLines = (it.lastOutputLines + o.line).takeLast(
+                                200
+                            )
+                        )
+                    }
+
                     else -> {}
                 }
             }
@@ -315,16 +444,27 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
             }
 
             if (_state.value.track == "production" && !_state.value.needsConfirmation) {
-                _state.update { it.copy(needsConfirmation = true, lastOutputLines = it.lastOutputLines + "Production selected — press Upload again to confirm.") }
+                _state.update {
+                    it.copy(
+                        needsConfirmation = true,
+                        lastOutputLines = it.lastOutputLines + "Production selected — press Upload again to confirm."
+                    )
+                }
                 return@launch
             }
 
-            val signed = signAabIfNeeded(projectRoot, aab)
-            if (signed == null) return@launch
+            val signed: String =
+                signAabIfNeeded(projectRoot, aab) ?: return@launch
 
             saveCredentials()
 
-            uploadToPlayFastlane(projectRoot, signed, _state.value.serviceAccountPath, _state.value.packageName, _state.value.track)
+            uploadToPlayFastlane(
+                projectRoot,
+                signed,
+                _state.value.serviceAccountPath,
+                _state.value.packageName,
+                _state.value.track
+            )
         }
     }
 
@@ -343,21 +483,32 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
                     val aab = files.firstOrNull { it.endsWith(".aab") }
                     if (aab != null) return if (aab.startsWith("/")) aab else "$base/$aab"
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 /* ignore */
             }
         }
         return null
     }
 
-    fun uploadToPlayFastlane(projectRoot: String, aabPath: String?, jsonKeyPath: String, packageName: String, track: String = "production") {
+    fun uploadToPlayFastlane(
+        projectRoot: String,
+        aabPath: String?,
+        jsonKeyPath: String,
+        packageName: String,
+        track: String = "production"
+    ) {
         viewModelScope.launch {
             val actualAab = aabPath ?: findAabPath(projectRoot)
             if (actualAab == null) {
                 _state.update { it.copy(lastOutputLines = it.lastOutputLines + "No .aab found. Build first or provide path.") }
                 return@launch
             }
-            _state.update { it.copy(buildInProgress = true, lastOutputLines = listOf("Starting fastlane supply...") ) }
+            _state.update {
+                it.copy(
+                    buildInProgress = true,
+                    lastOutputLines = listOf("Starting fastlane supply...")
+                )
+            }
             val cmd = listOf(
                 "fastlane",
                 "supply",
@@ -372,10 +523,34 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
 
             processService.execute(cmd, projectRoot).collect { output ->
                 when (output) {
-                    is ProcessOutput.Stdout -> _state.update { it.copy(lastOutputLines = (it.lastOutputLines + output.line).takeLast(200)) }
-                    is ProcessOutput.Stderr -> _state.update { it.copy(lastOutputLines = (it.lastOutputLines + output.line).takeLast(200)) }
-                    is ProcessOutput.Complete -> _state.update { it.copy(buildInProgress = false) }
-                    is ProcessOutput.Error -> _state.update { it.copy(buildInProgress = false, lastOutputLines = it.lastOutputLines + "ERROR: ${output.throwable.message}") }
+                    is ProcessOutput.Stdout -> _state.update {
+                        it.copy(
+                            lastOutputLines = (it.lastOutputLines + output.line).takeLast(
+                                200
+                            )
+                        )
+                    }
+
+                    is ProcessOutput.Stderr -> _state.update {
+                        it.copy(
+                            lastOutputLines = (it.lastOutputLines + output.line).takeLast(
+                                200
+                            )
+                        )
+                    }
+
+                    is ProcessOutput.Complete -> _state.update {
+                        it.copy(
+                            buildInProgress = false
+                        )
+                    }
+
+                    is ProcessOutput.Error -> _state.update {
+                        it.copy(
+                            buildInProgress = false,
+                            lastOutputLines = it.lastOutputLines + "ERROR: ${output.throwable.message}"
+                        )
+                    }
                 }
             }
         }

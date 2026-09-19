@@ -97,4 +97,24 @@
     <string name="theme_system">System</string>
 
     <string name="not_supported_on_web">Not supported on Web</string>
+
+    <string name="wear_package_name_label">Package Name</string>
+    <string name="wear_package_name_info_title">Package Name</string>
+    <string name="wear_package_name_info_text">The unique identifier for your app on the Google Play Store (e.g., com.example.app). This is required for Fastlane to know which app entry to update.</string>
+
+    <string name="wear_keystore_path_label">Keystore Path</string>
+    <string name="wear_keystore_path_info_title">Keystore Path</string>
+    <string name="wear_keystore_path_info_text">Path to your Android signing keystore file (.jks or .keystore). The tool uses this to sign the AAB before upload if it isn't already signed.</string>
+
+    <string name="wear_keystore_alias_label">Keystore Alias</string>
+    <string name="wear_keystore_alias_info_title">Keystore Alias</string>
+    <string name="wear_keystore_alias_info_text">The alias you gave to your signing key when you created the keystore.</string>
+
+    <string name="wear_save_credentials_label">Save Credentials</string>
+    <string name="wear_save_credentials_info_title">Save Credentials</string>
+    <string name="wear_save_credentials_info_text">Persists these settings locally so you don't have to re-enter them for future releases. They are stored securely on your machine.</string>
+
+    <string name="wear_service_account_label">Service Account JSON Path</string>
+    <string name="wear_service_account_info_title">Service Account</string>
+    <string name="wear_service_account_info_text">The JSON key file from your Google Play Console service account. This allows the tool to authenticate and upload the AAB to Google Play automatically.</string>
 </resources>

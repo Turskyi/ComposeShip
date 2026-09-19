@@ -14,10 +14,16 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -28,6 +34,44 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import composeship.core.generated.resources.Res
+import composeship.core.generated.resources.ok
+import composeship.core.generated.resources.wear_keystore_alias_info_text
+import composeship.core.generated.resources.wear_keystore_alias_info_title
+import composeship.core.generated.resources.wear_keystore_alias_label
+import composeship.core.generated.resources.wear_keystore_path_info_text
+import composeship.core.generated.resources.wear_keystore_path_info_title
+import composeship.core.generated.resources.wear_keystore_path_label
+import composeship.core.generated.resources.wear_package_name_info_text
+import composeship.core.generated.resources.wear_package_name_info_title
+import composeship.core.generated.resources.wear_package_name_label
+import composeship.core.generated.resources.wear_save_credentials_info_text
+import composeship.core.generated.resources.wear_save_credentials_info_title
+import composeship.core.generated.resources.wear_save_credentials_label
+import composeship.core.generated.resources.wear_service_account_info_text
+import composeship.core.generated.resources.wear_service_account_info_title
+import composeship.core.generated.resources.wear_service_account_label
+import org.jetbrains.compose.resources.stringResource
+
+@Composable
+fun InfoButton(title: String, text: String) {
+    var showDialog by remember { mutableStateOf(false) }
+    IconButton(onClick = { showDialog = true }) {
+        Icon(Icons.Default.Info, contentDescription = "Info")
+    }
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text(title) },
+            text = { Text(text) },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(Res.string.ok))
+                }
+            }
+        )
+    }
+}
 
 @Composable
 fun WearReleaseScreen(viewModel: WearReleaseViewModel, modifier: Modifier = Modifier) {
@@ -92,27 +136,69 @@ fun WearReleaseScreen(viewModel: WearReleaseViewModel, modifier: Modifier = Modi
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = s.serviceAccountPath,
-            onValueChange = { viewModel.onServiceAccountPathChanged(it) },
-            label = { Text("Service-account JSON path (for upload)") },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !s.buildInProgress
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = s.serviceAccountPath,
+                onValueChange = { viewModel.onServiceAccountPathChanged(it) },
+                label = { Text(stringResource(Res.string.wear_service_account_label)) },
+                modifier = Modifier.weight(1f),
+                enabled = !s.buildInProgress
+            )
+            InfoButton(
+                title = stringResource(Res.string.wear_service_account_info_title),
+                text = stringResource(Res.string.wear_service_account_info_text)
+            )
+        }
         Button(onClick = { viewModel.onBrowseServiceAccount() }, modifier = Modifier.padding(top = 8.dp), enabled = !s.buildInProgress) { Text("Browse JSON") }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(value = s.packageName, onValueChange = { viewModel.onPackageNameChanged(it) }, label = { Text("Package name (com.example.app)") }, modifier = Modifier.fillMaxWidth(), enabled = !s.buildInProgress)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = s.packageName,
+                onValueChange = { viewModel.onPackageNameChanged(it) },
+                label = { Text(stringResource(Res.string.wear_package_name_label)) },
+                modifier = Modifier.weight(1f),
+                enabled = !s.buildInProgress
+            )
+            InfoButton(
+                title = stringResource(Res.string.wear_package_name_info_title),
+                text = stringResource(Res.string.wear_package_name_info_text)
+            )
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(value = s.keystorePath, onValueChange = { viewModel.onKeystorePathChanged(it) }, label = { Text("Keystore path (.jks/.keystore)") }, modifier = Modifier.fillMaxWidth(), enabled = !s.buildInProgress)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = s.keystorePath,
+                onValueChange = { viewModel.onKeystorePathChanged(it) },
+                label = { Text(stringResource(Res.string.wear_keystore_path_label)) },
+                modifier = Modifier.weight(1f),
+                enabled = !s.buildInProgress
+            )
+            InfoButton(
+                title = stringResource(Res.string.wear_keystore_path_info_title),
+                text = stringResource(Res.string.wear_keystore_path_info_text)
+            )
+        }
         Button(onClick = { viewModel.onBrowseKeystore() }, modifier = Modifier.padding(top = 8.dp), enabled = !s.buildInProgress) { Text("Browse Keystore") }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(value = s.keystoreAlias, onValueChange = { viewModel.onKeystoreAliasChanged(it) }, label = { Text("Keystore alias") }, modifier = Modifier.fillMaxWidth(), enabled = !s.buildInProgress)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = s.keystoreAlias,
+                onValueChange = { viewModel.onKeystoreAliasChanged(it) },
+                label = { Text(stringResource(Res.string.wear_keystore_alias_label)) },
+                modifier = Modifier.weight(1f),
+                enabled = !s.buildInProgress
+            )
+            InfoButton(
+                title = stringResource(Res.string.wear_keystore_alias_info_title),
+                text = stringResource(Res.string.wear_keystore_alias_info_text)
+            )
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -128,8 +214,14 @@ fun WearReleaseScreen(viewModel: WearReleaseViewModel, modifier: Modifier = Modi
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Row {
-            Button(onClick = { viewModel.saveCredentials() }, modifier = Modifier, enabled = !s.buildInProgress) { Text("Save Credentials") }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Button(onClick = { viewModel.saveCredentials() }, modifier = Modifier, enabled = !s.buildInProgress) {
+                Text(stringResource(Res.string.wear_save_credentials_label))
+            }
+            InfoButton(
+                title = stringResource(Res.string.wear_save_credentials_info_title),
+                text = stringResource(Res.string.wear_save_credentials_info_text)
+            )
             Spacer(modifier = Modifier.width(8.dp))
             val uploadEnabled = !s.buildInProgress && s.serviceAccountPath.isNotBlank() && s.packageName.isNotBlank()
             Button(onClick = { viewModel.prepareAndUpload(s.projectRoot) }, enabled = uploadEnabled) {
