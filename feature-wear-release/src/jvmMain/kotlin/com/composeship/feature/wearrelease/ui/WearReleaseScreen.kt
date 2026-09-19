@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
@@ -32,9 +34,15 @@ fun WearReleaseScreen(viewModel: WearReleaseViewModel, modifier: Modifier = Modi
     val state = viewModel.state.collectAsState()
     val s = state.value
     val listState = rememberLazyListState()
+    val scrollState = rememberScrollState()
     var autoScroll by remember { mutableStateOf(true) }
 
-    Column(modifier = modifier.fillMaxSize().padding(12.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(12.dp)
+    ) {
         if (s.buildInProgress) {
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))
@@ -138,7 +146,12 @@ fun WearReleaseScreen(viewModel: WearReleaseViewModel, modifier: Modifier = Modi
         // Logs
         Text("Logs", modifier = Modifier.padding(bottom = 4.dp))
         SelectionContainer {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().weight(1f)) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(400.dp)
+            ) {
                 items(s.lastOutputLines) { line ->
                     Text(line)
                 }
