@@ -250,13 +250,15 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
         val pkg = svc.getCredential("wear_package_name") ?: ""
         val ks = svc.getCredential("wear_keystore_path") ?: ""
         val alias = svc.getCredential("wear_keystore_alias") ?: ""
+        val retained = svc.getCredential("wear_retained_version_codes") ?: ""
 
         _state.update {
             it.copy(
                 serviceAccountPath = sa,
                 packageName = pkg,
                 keystorePath = ks,
-                keystoreAlias = alias
+                keystoreAlias = alias,
+                retainedVersionCodes = retained
             )
         }
     }
@@ -279,6 +281,10 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
                 "wear_keystore_alias",
                 _state.value.keystoreAlias
             )
+            credentialService.saveCredential(
+                "wear_retained_version_codes",
+                _state.value.retainedVersionCodes
+            )
             _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Credentials saved.") }
         }
     }
@@ -297,6 +303,10 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
 
     fun onKeystoreAliasChanged(alias: String) {
         _state.update { it.copy(keystoreAlias = alias) }
+    }
+
+    fun onRetainedVersionCodesChanged(text: String) {
+        _state.update { it.copy(retainedVersionCodes = text) }
     }
 
     fun onTrackChanged(track: String) {
@@ -528,7 +538,7 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
                     lastOutputLines = listOf("Starting fastlane supply...")
                 )
             }
-            val cmd = listOf(
+            val cmd = mutableListOf(
                 "fastlane",
                 "supply",
                 "--aab", actualAab,
@@ -539,6 +549,9 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
                 "--skip_upload_images", "true",
                 "--skip_upload_screenshots", "true"
             )
+            if (_state.value.retainedVersionCodes.isNotBlank()) {
+                cmd.addAll(listOf("--version_codes_to_retain", _state.value.retainedVersionCodes))
+            }
 
             processService.execute(cmd, projectRoot).collect { output ->
                 when (output) {
@@ -571,6 +584,99 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
                         )
                     }
                 }
+            }
+        }
+    }
+
+    fun fetchActiveVersionCodes(projectRoot: String) {
+        viewModelScope.launch {
+            val sa = _state.value.serviceAccountPath
+            val pkg = _state.value.packageName
+            val currentTrack = _state.value.track
+            if (sa.isBlank() || pkg.isBlank()) {
+                _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Service account path or package name is empty.") }
+                return@launch
+            }
+
+            _state.update {
+                it.copy(
+                    buildInProgress = true,
+                    lastOutputLines = listOf("Fetching active version codes for track '$currentTrack' from Google Play Store...")
+                )
+            }
+
+            val cmd = listOf(
+                "fastlane",
+                "run",
+                "google_play_track_version_codes",
+                "package_name:$pkg",
+                "track:$currentTrack",
+                "json_key:$sa"
+            )
+
+            val codes = mutableListOf<String>()
+            var errorOccurred = false
+
+            processService.execute(cmd, projectRoot).collect { output ->
+                when (output) {
+                    is ProcessOutput.Stdout -> {
+                        _state.update { it.copy(lastOutputLines = (it.lastOutputLines + output.line).takeLast(200)) }
+                        // Fastlane prints lines like Result: [102, 103] or handles output in a matrix/array bracket form
+                        val regex = Regex("\\[([\\d\\s,]+)]")
+                        val match = regex.find(output.line)
+                        if (match != null) {
+                            val parsed = match.groupValues[1].split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                            codes.addAll(parsed)
+                        } else {
+                            if (output.line.contains("Result:") || output.line.contains("version codes:")) {
+                                Regex("\\b\\d+\\b").findAll(output.line).forEach { m ->
+                                    codes.add(m.value)
+                                }
+                            }
+                        }
+                    }
+
+                    is ProcessOutput.Stderr -> {
+                        _state.update { it.copy(lastOutputLines = (it.lastOutputLines + output.line).takeLast(200)) }
+                        if (output.line.contains("Result:")) {
+                            Regex("\\b\\d+\\b").findAll(output.line).forEach { m ->
+                                codes.add(m.value)
+                            }
+                        }
+                    }
+
+                    is ProcessOutput.Complete -> {
+                        _state.update { it.copy(buildInProgress = false) }
+                        if (output.exitCode == 0) {
+                            val cleanedCodes = codes.distinct()
+                            if (cleanedCodes.isNotEmpty()) {
+                                val joined = cleanedCodes.joinToString(",")
+                                _state.update {
+                                    it.copy(
+                                        retainedVersionCodes = joined,
+                                        lastOutputLines = it.lastOutputLines + "Successfully auto-populated version codes to retain: $joined"
+                                    )
+                                }
+                            } else {
+                                _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Command succeeded, but no active version codes were detected in the console logs.") }
+                            }
+                        } else {
+                            errorOccurred = true
+                        }
+                    }
+
+                    is ProcessOutput.Error -> {
+                        _state.update {
+                            it.copy(
+                                buildInProgress = false,
+                                lastOutputLines = it.lastOutputLines + "ERROR: ${output.throwable.message}"
+                            )
+                        }
+                    }
+                }
+            }
+            if (errorOccurred) {
+                _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Failed to fetch active version codes. Make sure your Track and Service Account details are correct.") }
             }
         }
     }
