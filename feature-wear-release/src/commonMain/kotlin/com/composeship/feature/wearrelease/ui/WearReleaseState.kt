@@ -12,6 +12,6 @@ data class WearReleaseState(
     val packageName: String = "",
     val keystorePath: String = "",
     val keystoreAlias: String = "",
-    val track: String = "internal",
+    val track: String = "production",
     val needsConfirmation: Boolean = false
 )
