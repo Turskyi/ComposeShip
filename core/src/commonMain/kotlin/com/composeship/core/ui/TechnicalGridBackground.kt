@@ -1,10 +1,19 @@
 package com.composeship.core.ui
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -132,8 +141,24 @@ private fun DrawScope.drawRulers(color: Color, progress: Float) {
     val tickSpacing = 10.dp.toPx()
     val majorTickEvery = 5
     val strokeWidth = 1.dp.toPx()
+
+    // Draw solid axis lines
+    // Top horizontal axis
+    drawLine(
+        color = color,
+        start = Offset(0f, 0f),
+        end = Offset(size.width * progress, 0f),
+        strokeWidth = strokeWidth
+    )
+    // Left vertical axis
+    drawLine(
+        color = color,
+        start = Offset(0f, 0f),
+        end = Offset(0f, size.height * progress),
+        strokeWidth = strokeWidth
+    )
     
-    // Top ruler
+    // Top ruler ticks
     val topRulerLimit = size.width * progress
     val topCount = (topRulerLimit / tickSpacing).toInt()
     for (i in 0..topCount) {
@@ -148,7 +173,7 @@ private fun DrawScope.drawRulers(color: Color, progress: Float) {
         )
     }
     
-    // Left ruler
+    // Left ruler ticks
     val leftRulerLimit = size.height * progress
     val leftCount = (leftRulerLimit / tickSpacing).toInt()
     for (i in 0..leftCount) {

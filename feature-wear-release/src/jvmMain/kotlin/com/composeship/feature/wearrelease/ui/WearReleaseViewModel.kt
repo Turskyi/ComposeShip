@@ -135,8 +135,12 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
 
     fun buildWear(projectRoot: String) {
         viewModelScope.launch {
-            _state.update { it.copy(lastOutputLines = listOf("Starting fresh flutter build...")) }
-            performBuildWear(projectRoot)
+            _state.update { it.copy(buildInProgress = true, lastOutputLines = listOf("Starting fresh flutter build...")) }
+            try {
+                performBuildWear(projectRoot)
+            } finally {
+                _state.update { it.copy(buildInProgress = false) }
+            }
         }
     }
 
@@ -148,7 +152,6 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
 
         _state.update {
             it.copy(
-                buildInProgress = true,
                 lastOutputLines = it.lastOutputLines + "Starting flutter build..."
             )
         }
@@ -161,7 +164,9 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
                     "appbundle",
                     "--flavor",
                     "wear",
-                    "--release"
+                    "--release",
+                    "-t",
+                    "lib/main.dart"
                 ), projectRoot
             )
                 .collect { output ->
@@ -195,42 +200,51 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
                         }
                     }
                 }
-        } finally {
-            _state.update { it.copy(buildInProgress = false) }
+        } catch (e: Exception) {
+            _state.update {
+                it.copy(
+                    lastOutputLines = it.lastOutputLines + "ERROR: ${e.message}"
+                )
+            }
         }
         return success
     }
 
     fun generateReleaseNotesFromGit(projectRoot: String) {
         viewModelScope.launch {
-            val lastTagCmd = listOf("git", "describe", "--tags", "--abbrev=0")
-            var fromRef = ""
+            _state.update { it.copy(buildInProgress = true) }
             try {
-                processService.execute(lastTagCmd, projectRoot).collect { o ->
-                    if (o is ProcessOutput.Stdout) fromRef = o.line.trim()
+                val lastTagCmd = listOf("git", "describe", "--tags", "--abbrev=0")
+                var fromRef = ""
+                try {
+                    processService.execute(lastTagCmd, projectRoot).collect { o ->
+                        if (o is ProcessOutput.Stdout) fromRef = o.line.trim()
+                    }
+                } catch (_: Exception) {
+                    // no tag
+                    fromRef = ""
                 }
-            } catch (_: Exception) {
-                // no tag
-                fromRef = ""
-            }
 
-            val logCmd = if (fromRef.isNotEmpty()) listOf(
-                "git",
-                "log",
-                "$fromRef..HEAD",
-                "--pretty=format:- %s (%an)"
-            )
-            else listOf("git", "log", "--pretty=format:- %s (%an)")
+                val logCmd = if (fromRef.isNotEmpty()) listOf(
+                    "git",
+                    "log",
+                    "$fromRef..HEAD",
+                    "--pretty=format:- %s (%an)"
+                )
+                else listOf("git", "log", "--pretty=format:- %s (%an)")
 
-            val sb = StringBuilder()
-            processService.execute(logCmd, projectRoot).collect { o ->
-                if (o is ProcessOutput.Stdout) {
-                    sb.appendLine(o.line)
+                val sb = StringBuilder()
+                processService.execute(logCmd, projectRoot).collect { o ->
+                    if (o is ProcessOutput.Stdout) {
+                        sb.appendLine(o.line)
+                    }
                 }
-            }
 
-            val notes = sb.toString().trim()
-            _state.update { it.copy(releaseNotes = notes) }
+                val notes = sb.toString().trim()
+                _state.update { it.copy(releaseNotes = notes) }
+            } finally {
+                _state.update { it.copy(buildInProgress = false) }
+            }
         }
     }
 
@@ -265,28 +279,32 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
 
     fun saveCredentials() {
         viewModelScope.launch {
-            credentialService.saveCredential(
-                "wear_service_account",
-                _state.value.serviceAccountPath
-            )
-            credentialService.saveCredential(
-                "wear_package_name",
-                _state.value.packageName
-            )
-            credentialService.saveCredential(
-                "wear_keystore_path",
-                _state.value.keystorePath
-            )
-            credentialService.saveCredential(
-                "wear_keystore_alias",
-                _state.value.keystoreAlias
-            )
-            credentialService.saveCredential(
-                "wear_retained_version_codes",
-                _state.value.retainedVersionCodes
-            )
-            _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Credentials saved.") }
+            performSaveCredentials()
         }
+    }
+
+    private suspend fun performSaveCredentials() {
+        credentialService.saveCredential(
+            "wear_service_account",
+            _state.value.serviceAccountPath
+        )
+        credentialService.saveCredential(
+            "wear_package_name",
+            _state.value.packageName
+        )
+        credentialService.saveCredential(
+            "wear_keystore_path",
+            _state.value.keystorePath
+        )
+        credentialService.saveCredential(
+            "wear_keystore_alias",
+            _state.value.keystoreAlias
+        )
+        credentialService.saveCredential(
+            "wear_retained_version_codes",
+            _state.value.retainedVersionCodes
+        )
+        _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Credentials saved.") }
     }
 
     fun onServiceAccountPathChanged(path: String) {
@@ -456,44 +474,48 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
 
     fun prepareAndUpload(projectRoot: String) {
         viewModelScope.launch {
-            _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Preparing upload...") }
-            var aab = chooseAab(projectRoot)
-            if (aab == null) {
-                _state.update { it.copy(lastOutputLines = it.lastOutputLines + "No .aab found. Building it automatically...") }
-                val buildSuccess = performBuildWear(projectRoot)
-                if (!buildSuccess) {
-                    _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Build failed. Cannot proceed with upload.") }
-                    return@launch
-                }
-                aab = chooseAab(projectRoot)
+            _state.update { it.copy(buildInProgress = true, lastOutputLines = it.lastOutputLines + "Preparing upload...") }
+            try {
+                var aab = chooseAab(projectRoot)
                 if (aab == null) {
-                    _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Build succeeded but .aab still not found.") }
+                    _state.update { it.copy(lastOutputLines = it.lastOutputLines + "No .aab found. Building it automatically...") }
+                    val buildSuccess = performBuildWear(projectRoot)
+                    if (!buildSuccess) {
+                        _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Build failed. Cannot proceed with upload.") }
+                        return@launch
+                    }
+                    aab = chooseAab(projectRoot)
+                    if (aab == null) {
+                        _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Build succeeded but .aab still not found.") }
+                        return@launch
+                    }
+                }
+
+                if (_state.value.track == "production" && !_state.value.needsConfirmation) {
+                    _state.update {
+                        it.copy(
+                            needsConfirmation = true,
+                            lastOutputLines = it.lastOutputLines + "Production selected — press Upload again to confirm."
+                        )
+                    }
                     return@launch
                 }
+
+                val signed: String =
+                    signAabIfNeeded(projectRoot, aab) ?: return@launch
+
+                performSaveCredentials()
+
+                performUploadToPlayFastlane(
+                    projectRoot,
+                    signed,
+                    _state.value.serviceAccountPath,
+                    _state.value.packageName,
+                    _state.value.track
+                )
+            } finally {
+                _state.update { it.copy(buildInProgress = false) }
             }
-
-            if (_state.value.track == "production" && !_state.value.needsConfirmation) {
-                _state.update {
-                    it.copy(
-                        needsConfirmation = true,
-                        lastOutputLines = it.lastOutputLines + "Production selected — press Upload again to confirm."
-                    )
-                }
-                return@launch
-            }
-
-            val signed: String =
-                signAabIfNeeded(projectRoot, aab) ?: return@launch
-
-            saveCredentials()
-
-            uploadToPlayFastlane(
-                projectRoot,
-                signed,
-                _state.value.serviceAccountPath,
-                _state.value.packageName,
-                _state.value.track
-            )
         }
     }
 
@@ -519,67 +541,64 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
         return null
     }
 
-    fun uploadToPlayFastlane(
+    private suspend fun performUploadToPlayFastlane(
         projectRoot: String,
         aabPath: String?,
         jsonKeyPath: String,
         packageName: String,
         track: String = "production"
     ) {
-        viewModelScope.launch {
-            val actualAab = aabPath ?: findAabPath(projectRoot)
-            if (actualAab == null) {
-                _state.update { it.copy(lastOutputLines = it.lastOutputLines + "No .aab found. Build first or provide path.") }
-                return@launch
-            }
-            _state.update {
-                it.copy(
-                    buildInProgress = true,
-                    lastOutputLines = listOf("Starting fastlane supply...")
-                )
-            }
-            val cmd = mutableListOf(
-                "fastlane",
-                "supply",
-                "--aab", actualAab,
-                "--json_key", jsonKeyPath,
-                "--package_name", packageName,
-                "--track", track,
-                "--skip_upload_metadata", "true",
-                "--skip_upload_images", "true",
-                "--skip_upload_screenshots", "true"
+        val actualAab = aabPath ?: findAabPath(projectRoot)
+        if (actualAab == null) {
+            _state.update { it.copy(lastOutputLines = it.lastOutputLines + "No .aab found. Build first or provide path.") }
+            return
+        }
+        _state.update {
+            it.copy(
+                lastOutputLines = listOf("Starting fastlane supply...")
             )
-            if (_state.value.retainedVersionCodes.isNotBlank()) {
-                cmd.addAll(listOf("--version_codes_to_retain", _state.value.retainedVersionCodes))
-            }
+        }
+        val playTrack = if (track.startsWith("wear:")) track else "wear:$track"
+        val cmd = mutableListOf(
+            "fastlane",
+            "supply",
+            "--aab", actualAab,
+            "--json_key", jsonKeyPath,
+            "--package_name", packageName,
+            "--track", playTrack,
+            "--skip_upload_metadata", "true",
+            "--skip_upload_images", "true",
+            "--skip_upload_screenshots", "true"
+        )
+        if (_state.value.retainedVersionCodes.isNotBlank()) {
+            cmd.addAll(listOf("--version_codes_to_retain", _state.value.retainedVersionCodes))
+        }
 
-            processService.execute(cmd, projectRoot).collect { output ->
-                when (output) {
-                    is ProcessOutput.Stdout -> _state.update {
-                        it.copy(
-                            lastOutputLines = (it.lastOutputLines + output.line).takeLast(
-                                200
-                            )
+        processService.execute(cmd, projectRoot).collect { output ->
+            when (output) {
+                is ProcessOutput.Stdout -> _state.update {
+                    it.copy(
+                        lastOutputLines = (it.lastOutputLines + output.line).takeLast(
+                            200
                         )
-                    }
+                    )
+                }
 
-                    is ProcessOutput.Stderr -> _state.update {
-                        it.copy(
-                            lastOutputLines = (it.lastOutputLines + output.line).takeLast(
-                                200
-                            )
+                is ProcessOutput.Stderr -> _state.update {
+                    it.copy(
+                        lastOutputLines = (it.lastOutputLines + output.line).takeLast(
+                            200
                         )
-                    }
+                    )
+                }
 
-                    is ProcessOutput.Complete -> _state.update {
-                        it.copy(
-                            buildInProgress = false
-                        )
-                    }
+                is ProcessOutput.Complete -> {
+                    // completion is handled by the caller via buildInProgress flag
+                }
 
-                    is ProcessOutput.Error -> _state.update {
+                is ProcessOutput.Error -> {
+                    _state.update {
                         it.copy(
-                            buildInProgress = false,
                             lastOutputLines = it.lastOutputLines + "ERROR: ${output.throwable.message}"
                         )
                     }
@@ -590,93 +609,98 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
 
     fun fetchActiveVersionCodes(projectRoot: String) {
         viewModelScope.launch {
-            val sa = _state.value.serviceAccountPath
-            val pkg = _state.value.packageName
-            val currentTrack = _state.value.track
-            if (sa.isBlank() || pkg.isBlank()) {
-                _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Service account path or package name is empty.") }
-                return@launch
-            }
+            _state.update { it.copy(buildInProgress = true) }
+            try {
+                val sa = _state.value.serviceAccountPath
+                val pkg = _state.value.packageName
+                val currentTrack = _state.value.track
+                if (sa.isBlank() || pkg.isBlank()) {
+                    _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Service account path or package name is empty.") }
+                    return@launch
+                }
 
-            _state.update {
-                it.copy(
-                    buildInProgress = true,
-                    lastOutputLines = listOf("Fetching active version codes for track '$currentTrack' from Google Play Store...")
+                // We want to fetch the active PHONE version codes to retain them, 
+                // so we query the main track without the "wear:" prefix.
+                val playTrack = if (currentTrack.startsWith("wear:")) currentTrack.substringAfter("wear:") else currentTrack
+                _state.update {
+                    it.copy(
+                        lastOutputLines = listOf("Fetching active Phone version codes for track '$playTrack' from Google Play Store...")
+                    )
+                }
+
+                val cmd = listOf(
+                    "fastlane",
+                    "run",
+                    "google_play_track_version_codes",
+                    "package_name:$pkg",
+                    "track:$playTrack",
+                    "json_key:$sa"
                 )
-            }
 
-            val cmd = listOf(
-                "fastlane",
-                "run",
-                "google_play_track_version_codes",
-                "package_name:$pkg",
-                "track:$currentTrack",
-                "json_key:$sa"
-            )
+                val codes = mutableListOf<String>()
+                var errorOccurred = false
 
-            val codes = mutableListOf<String>()
-            var errorOccurred = false
+                processService.execute(cmd, projectRoot).collect { output ->
+                    when (output) {
+                        is ProcessOutput.Stdout -> {
+                            _state.update { it.copy(lastOutputLines = (it.lastOutputLines + output.line).takeLast(200)) }
+                            // Fastlane prints lines like Result: [102, 103] or handles output in a matrix/array bracket form
+                            val regex = Regex("\\[([\\d\\s,]+)]")
+                            val match = regex.find(output.line)
+                            if (match != null) {
+                                val parsed = match.groupValues[1].split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                                codes.addAll(parsed)
+                            } else {
+                                if (output.line.contains("Result:") || output.line.contains("version codes:")) {
+                                    Regex("\\b\\d+\\b").findAll(output.line).forEach { m ->
+                                        codes.add(m.value)
+                                    }
+                                }
+                            }
+                        }
 
-            processService.execute(cmd, projectRoot).collect { output ->
-                when (output) {
-                    is ProcessOutput.Stdout -> {
-                        _state.update { it.copy(lastOutputLines = (it.lastOutputLines + output.line).takeLast(200)) }
-                        // Fastlane prints lines like Result: [102, 103] or handles output in a matrix/array bracket form
-                        val regex = Regex("\\[([\\d\\s,]+)]")
-                        val match = regex.find(output.line)
-                        if (match != null) {
-                            val parsed = match.groupValues[1].split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                            codes.addAll(parsed)
-                        } else {
-                            if (output.line.contains("Result:") || output.line.contains("version codes:")) {
+                        is ProcessOutput.Stderr -> {
+                            _state.update { it.copy(lastOutputLines = (it.lastOutputLines + output.line).takeLast(200)) }
+                            if (output.line.contains("Result:")) {
                                 Regex("\\b\\d+\\b").findAll(output.line).forEach { m ->
                                     codes.add(m.value)
                                 }
                             }
                         }
-                    }
 
-                    is ProcessOutput.Stderr -> {
-                        _state.update { it.copy(lastOutputLines = (it.lastOutputLines + output.line).takeLast(200)) }
-                        if (output.line.contains("Result:")) {
-                            Regex("\\b\\d+\\b").findAll(output.line).forEach { m ->
-                                codes.add(m.value)
-                            }
-                        }
-                    }
-
-                    is ProcessOutput.Complete -> {
-                        _state.update { it.copy(buildInProgress = false) }
-                        if (output.exitCode == 0) {
-                            val cleanedCodes = codes.distinct()
-                            if (cleanedCodes.isNotEmpty()) {
-                                val joined = cleanedCodes.joinToString(",")
-                                _state.update {
-                                    it.copy(
-                                        retainedVersionCodes = joined,
-                                        lastOutputLines = it.lastOutputLines + "Successfully auto-populated version codes to retain: $joined"
-                                    )
+                        is ProcessOutput.Complete -> {
+                            if (output.exitCode == 0) {
+                                val cleanedCodes = codes.distinct()
+                                if (cleanedCodes.isNotEmpty()) {
+                                    val joined = cleanedCodes.joinToString(",")
+                                    _state.update {
+                                        it.copy(
+                                            retainedVersionCodes = joined,
+                                            lastOutputLines = it.lastOutputLines + "Successfully auto-populated version codes to retain: $joined"
+                                        )
+                                    }
+                                } else {
+                                    _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Command succeeded, but no active version codes were detected in the console logs.") }
                                 }
                             } else {
-                                _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Command succeeded, but no active version codes were detected in the console logs.") }
+                                errorOccurred = true
                             }
-                        } else {
-                            errorOccurred = true
                         }
-                    }
 
-                    is ProcessOutput.Error -> {
-                        _state.update {
-                            it.copy(
-                                buildInProgress = false,
-                                lastOutputLines = it.lastOutputLines + "ERROR: ${output.throwable.message}"
-                            )
+                        is ProcessOutput.Error -> {
+                            _state.update {
+                                it.copy(
+                                    lastOutputLines = it.lastOutputLines + "ERROR: ${output.throwable.message}"
+                                )
+                            }
                         }
                     }
                 }
-            }
-            if (errorOccurred) {
-                _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Failed to fetch active version codes. Make sure your Track and Service Account details are correct.") }
+                if (errorOccurred) {
+                    _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Failed to fetch active version codes. Make sure your Track and Service Account details are correct.") }
+                }
+            } finally {
+                _state.update { it.copy(buildInProgress = false) }
             }
         }
     }
