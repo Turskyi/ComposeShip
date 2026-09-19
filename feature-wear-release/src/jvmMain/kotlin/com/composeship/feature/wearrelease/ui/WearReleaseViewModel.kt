@@ -134,18 +134,26 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
     }
 
     fun buildWear(projectRoot: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(lastOutputLines = listOf("Starting fresh flutter build...")) }
+            performBuildWear(projectRoot)
+        }
+    }
+
+    private suspend fun performBuildWear(projectRoot: String): Boolean {
         if (!_state.value.isProjectValid) {
             _state.update { it.copy(lastOutputLines = (it.lastOutputLines + "Invalid project root. Select a Flutter project (pubspec.yaml or android/ present).")) }
-            return
+            return false
         }
 
-        viewModelScope.launch {
-            _state.update {
-                it.copy(
-                    buildInProgress = true,
-                    lastOutputLines = listOf("Starting flutter build...")
-                )
-            }
+        _state.update {
+            it.copy(
+                buildInProgress = true,
+                lastOutputLines = it.lastOutputLines + "Starting flutter build..."
+            )
+        }
+        var success = false
+        try {
             processService.execute(
                 listOf(
                     "flutter",
@@ -174,21 +182,23 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
                             )
                         }
 
-                        is ProcessOutput.Complete -> _state.update {
-                            it.copy(
-                                buildInProgress = false
-                            )
+                        is ProcessOutput.Complete -> {
+                            success = output.exitCode == 0
                         }
 
-                        is ProcessOutput.Error -> _state.update {
-                            it.copy(
-                                buildInProgress = false,
-                                lastOutputLines = it.lastOutputLines + "ERROR: ${output.throwable.message}"
-                            )
+                        is ProcessOutput.Error -> {
+                            _state.update {
+                                it.copy(
+                                    lastOutputLines = it.lastOutputLines + "ERROR: ${output.throwable.message}"
+                                )
+                            }
                         }
                     }
                 }
+        } finally {
+            _state.update { it.copy(buildInProgress = false) }
         }
+        return success
     }
 
     fun generateReleaseNotesFromGit(projectRoot: String) {
@@ -437,10 +447,19 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
     fun prepareAndUpload(projectRoot: String) {
         viewModelScope.launch {
             _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Preparing upload...") }
-            val aab = chooseAab(projectRoot)
+            var aab = chooseAab(projectRoot)
             if (aab == null) {
-                _state.update { it.copy(lastOutputLines = it.lastOutputLines + "No .aab found. Build first.") }
-                return@launch
+                _state.update { it.copy(lastOutputLines = it.lastOutputLines + "No .aab found. Building it automatically...") }
+                val buildSuccess = performBuildWear(projectRoot)
+                if (!buildSuccess) {
+                    _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Build failed. Cannot proceed with upload.") }
+                    return@launch
+                }
+                aab = chooseAab(projectRoot)
+                if (aab == null) {
+                    _state.update { it.copy(lastOutputLines = it.lastOutputLines + "Build succeeded but .aab still not found.") }
+                    return@launch
+                }
             }
 
             if (_state.value.track == "production" && !_state.value.needsConfirmation) {
