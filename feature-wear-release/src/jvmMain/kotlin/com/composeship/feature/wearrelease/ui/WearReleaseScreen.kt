@@ -1,5 +1,6 @@
 package com.composeship.feature.wearrelease.ui
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -28,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
@@ -55,11 +58,11 @@ fun WearReleaseScreen(
     modifier: Modifier = Modifier
 ) {
     val state = viewModel.state.collectAsState()
-    val s = state.value
-    val listState = rememberLazyListState()
-    val scrollState = rememberScrollState()
-    var autoScroll by remember { mutableStateOf(true) }
-    val clipboardManager = LocalClipboardManager.current
+    val s: WearReleaseState = state.value
+    val listState: LazyListState = rememberLazyListState()
+    val scrollState: ScrollState = rememberScrollState()
+    var autoScroll: Boolean by remember { mutableStateOf(true) }
+    val clipboardManager: ClipboardManager = LocalClipboardManager.current
 
     Column(
         modifier = modifier
@@ -121,7 +124,7 @@ fun WearReleaseScreen(
         OutlinedTextField(
             value = s.releaseNotes,
             onValueChange = { viewModel.onReleaseNotesChanged(it) },
-            label = { Text("Release Notes (generated)") },
+            label = { Text("Release Notes (uploaded to Play)") },
             modifier = Modifier.fillMaxWidth(),
             enabled = !s.buildInProgress
         )

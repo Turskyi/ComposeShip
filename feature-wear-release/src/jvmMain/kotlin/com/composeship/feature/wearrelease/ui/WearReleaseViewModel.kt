@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Path
 
 class WearReleaseViewModel(
     private val processService: ProcessService,
@@ -555,9 +558,13 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
             _state.update { it.copy(lastOutputLines = it.lastOutputLines + "No .aab found. Build first or provide path.") }
             return
         }
+        val releaseNotesMetadata = createReleaseNotesMetadata(_state.value.releaseNotes)
         _state.update {
             it.copy(
-                lastOutputLines = listOf("Starting fastlane supply...")
+                lastOutputLines = listOf(
+                    if (releaseNotesMetadata == null) "Starting fastlane supply without release notes (the field is blank)."
+                    else "Starting fastlane supply with release notes..."
+                )
             )
         }
         val playTrack = if (track.startsWith("wear:")) track else "wear:$track"
@@ -573,8 +580,20 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
             "--skip_upload_screenshots", "true"
         )
 
-        processService.execute(cmd, projectRoot).collect { output ->
-            when (output) {
+        // Fastlane uploads Play's "What's new" from locale-specific changelog files.
+        // Changelogs are separate from store-listing metadata, so leave the latter disabled.
+        if (releaseNotesMetadata != null) {
+            cmd.addAll(
+                listOf(
+                    "--metadata_path", releaseNotesMetadata.toString(),
+                    "--skip_upload_changelogs", "false"
+                )
+            )
+        }
+
+        try {
+            processService.execute(cmd, projectRoot).collect { output ->
+                when (output) {
                 is ProcessOutput.Stdout -> _state.update {
                     it.copy(
                         lastOutputLines = (it.lastOutputLines + output.line).takeLast(
@@ -618,7 +637,43 @@ Poprawki błędów i usprawnienia wydajności. Ta wersja zawiera drobne poprawki
                         )
                     }
                 }
+                }
             }
+        } finally {
+            releaseNotesMetadata?.toFile()?.deleteRecursively()
+        }
+    }
+
+    /** Creates Fastlane's Android changelog layout from the release-notes field. */
+    private fun createReleaseNotesMetadata(releaseNotes: String): Path? {
+        if (releaseNotes.isBlank()) return null
+
+        val localizedNotes = Regex(
+            "<([a-z]{2,3}(?:-[A-Z]{2})?)>\\s*(.*?)\\s*</\\1>",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        ).findAll(releaseNotes).map { match ->
+            match.groupValues[1] to match.groupValues[2]
+        }.filter { (_, text) -> text.isNotBlank() }.toList().ifEmpty {
+            listOf("en-US" to releaseNotes.trim())
+        }
+
+        return try {
+            val metadataPath = Files.createTempDirectory("composeship-play-metadata-")
+            localizedNotes.forEach { (locale, text) ->
+                val changelogDirectory = metadataPath.resolve(locale).resolve("changelogs")
+                Files.createDirectories(changelogDirectory)
+                Files.writeString(
+                    changelogDirectory.resolve("default.txt"),
+                    text.trim(),
+                    StandardCharsets.UTF_8
+                )
+            }
+            metadataPath
+        } catch (e: Exception) {
+            _state.update {
+                it.copy(lastOutputLines = it.lastOutputLines + "Could not prepare release notes: ${e.message}")
+            }
+            null
         }
     }
 }
