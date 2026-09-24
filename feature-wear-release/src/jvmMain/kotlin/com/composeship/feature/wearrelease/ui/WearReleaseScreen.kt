@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
@@ -201,33 +202,6 @@ fun WearReleaseScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = s.retainedVersionCodes,
-                onValueChange = { viewModel.onRetainedVersionCodesChanged(it) },
-                label = { Text("Version codes to retain (comma separated)") },
-                placeholder = { Text("e.g. 100,101") },
-                modifier = Modifier.weight(1f),
-                enabled = !s.buildInProgress
-            )
-            InfoButton(
-                title = "Retained Version Codes",
-                text = "When releasing a standalone Wear OS bundle via the API, specify the currently active Phone/Mobile version code(s) here (comma-separated) to keep them active in the track. This prevents Google Play from deactivating the Phone app for existing users.\n\nYou can manually find these version codes in your Google Play Console under Releases Overview, or use the Fetch button to automatically download active version codes for the chosen track using Fastlane."
-            )
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Button(
-            onClick = { viewModel.fetchActiveVersionCodes(s.projectRoot) },
-            enabled = !s.buildInProgress && s.serviceAccountPath.isNotBlank() && s.packageName.isNotBlank(),
-            modifier = Modifier.padding(bottom = 4.dp)
-        ) {
-            Text("Fetch active version codes from Google Play")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
         // Track selection
         var trackExpanded by remember { mutableStateOf(false) }
         val tracks = listOf("internal", "alpha", "beta", "production")
@@ -270,6 +244,14 @@ fun WearReleaseScreen(
             ) {
                 Text(if (s.track == "production") "Upload to Play (production)" else "Upload to Play")
             }
+        }
+
+        if (s.statusMessage != null) {
+            Text(
+                text = s.statusMessage,
+                color = if (s.isStatusError) Color.Red else Color(0xFF008000), // Dark green
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
 
         if (s.needsConfirmation) {

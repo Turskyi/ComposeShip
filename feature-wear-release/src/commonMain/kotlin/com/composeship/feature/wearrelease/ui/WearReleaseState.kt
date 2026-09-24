@@ -13,6 +13,7 @@ data class WearReleaseState(
     val keystorePath: String = "",
     val keystoreAlias: String = "",
     val track: String = "production",
-    val retainedVersionCodes: String = "",
-    val needsConfirmation: Boolean = false
+    val needsConfirmation: Boolean = false,
+    val statusMessage: String? = null,
+    val isStatusError: Boolean = false
 )
