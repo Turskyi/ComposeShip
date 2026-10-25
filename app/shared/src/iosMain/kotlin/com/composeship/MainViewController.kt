@@ -7,6 +7,7 @@ import com.composeship.core.domain.model.Feature
 import com.composeship.feature.cloudrundeploy.data.service.PlaceholderGcloudService
 import com.composeship.feature.cloudrundeploy.di.CloudRunDeployContainer
 import com.composeship.feature.cloudrundeploy.ui.CloudRunDeployScreen
+import com.composeship.ui.password.PasswordGeneratorScreen
 
 /**
  * Entry point for the iOS application. 
@@ -29,6 +30,7 @@ fun MainViewController() = ComposeUIViewController {
     App(appContainer = appContainer) { feature, modifier ->
         when (feature) {
             Feature.CLOUD_RUN_DEPLOY -> CloudRunDeployScreen(cloudRunViewModel, modifier)
+            Feature.PASSWORD_GENERATOR -> PasswordGeneratorScreen(modifier)
             Feature.MACOS_RELEASE -> Text("Not supported on iOS", modifier)
             else -> Text("Not supported on iOS", modifier)
         }

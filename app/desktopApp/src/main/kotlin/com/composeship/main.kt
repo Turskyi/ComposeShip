@@ -13,6 +13,7 @@ import com.composeship.feature.macosrelease.data.service.DesktopFileSystemServic
 import com.composeship.feature.macosrelease.data.service.DesktopProcessService
 import com.composeship.feature.macosrelease.di.DesktopAppContainer
 import com.composeship.feature.macosrelease.ui.MacOsReleaseScreen
+import com.composeship.ui.password.PasswordGeneratorScreen
 
 fun main() {
     val appContainer = AppContainer()
@@ -45,6 +46,7 @@ fun main() {
                     Feature.CLOUD_RUN_DEPLOY -> CloudRunDeployScreen(cloudRunViewModel, modifier)
                     Feature.FIREBASE_HOSTING -> FirebaseDeployScreen(firebaseViewModel, modifier)
                     Feature.WEAR_RELEASE -> com.composeship.feature.wearrelease.ui.WearReleaseScreen(wearViewModel, modifier)
+                    Feature.PASSWORD_GENERATOR -> PasswordGeneratorScreen(modifier)
                     else -> com.composeship.feature.wearrelease.ui.WearReleaseScreen(wearViewModel, modifier)
                 }
             }

@@ -1,0 +1,17 @@
+<resources>
+    <string name="password_generator_title">Password Generator</string>
+    <string name="password_length">Password length (4–64)</string>
+    <string name="password_quantity">Quantity (1–20)</string>
+    <string name="password_include_numbers">Include numbers</string>
+    <string name="password_include_lowercase">Include lowercase letters</string>
+    <string name="password_include_uppercase">Include uppercase letters</string>
+    <string name="password_begin_with_letter">Begin with a letter</string>
+    <string name="password_exclude_similar">Exclude similar characters (i, l, 1, I, L, o, 0, O)</string>
+    <string name="password_exclude_duplicates">Exclude duplicate characters</string>
+    <string name="password_exclude_sequential">Exclude sequential characters (e.g. abc, 789)</string>
+    <string name="password_generate">Generate</string>
+    <string name="password_copy_all">Copy all</string>
+    <string name="password_copy_one">Copy password</string>
+    <string name="password_generated">Copied to clipboard</string>
+    <string name="password_validation">Check the length, quantity, and selected character types.</string>
+</resources>

@@ -1,0 +1,17 @@
+<resources>
+    <string name="password_generator_title">Генератор паролів</string>
+    <string name="password_length">Довжина пароля (4–64)</string>
+    <string name="password_quantity">Кількість (1–20)</string>
+    <string name="password_include_numbers">Додавати цифри</string>
+    <string name="password_include_lowercase">Додавати малі літери</string>
+    <string name="password_include_uppercase">Додавати великі літери</string>
+    <string name="password_begin_with_letter">Починати з літери</string>
+    <string name="password_exclude_similar">Не використовувати схожі символи (i, l, 1, I, L, o, 0, O)</string>
+    <string name="password_exclude_duplicates">Не використовувати символи повторно</string>
+    <string name="password_exclude_sequential">Не використовувати послідовні символи (наприклад, abc, 789)</string>
+    <string name="password_generate">Згенерувати</string>
+    <string name="password_copy_all">Копіювати всі</string>
+    <string name="password_copy_one">Копіювати пароль</string>
+    <string name="password_generated">Скопійовано до буфера обміну</string>
+    <string name="password_validation">Перевірте довжину, кількість і вибрані типи символів.</string>
+</resources>

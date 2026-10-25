@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Laptop
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.DropdownMenu
@@ -56,6 +57,8 @@ import composeship.core.generated.resources.switch_theme
 import composeship.core.generated.resources.theme_dark
 import composeship.core.generated.resources.theme_light
 import composeship.core.generated.resources.theme_system
+import com.composeship.app.shared.generated.resources.Res as SharedRes
+import com.composeship.app.shared.generated.resources.password_generator_title
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -140,6 +143,17 @@ fun MainScaffold(
                             )
                         },
                         label = { Text(stringResource(Res.string.feature_wear)) }
+                    )
+                    NavigationRailItem(
+                        selected = currentFeature == Feature.PASSWORD_GENERATOR,
+                        onClick = { viewModel.selectFeature(Feature.PASSWORD_GENERATOR) },
+                        icon = { Icon(Icons.Default.Key, contentDescription = null) },
+                        label = {
+                            Text(
+                                stringResource(SharedRes.string.password_generator_title),
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
+                        }
                     )
                 }
 

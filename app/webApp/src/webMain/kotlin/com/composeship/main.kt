@@ -11,6 +11,7 @@ import com.composeship.feature.cloudrundeploy.ui.CloudRunDeployScreen
 import com.composeship.feature.firebasedeploy.data.service.PlaceholderFirebaseService
 import com.composeship.feature.firebasedeploy.di.FirebaseDeployContainer
 import com.composeship.feature.firebasedeploy.ui.FirebaseDeployScreen
+import com.composeship.ui.password.PasswordGeneratorScreen
 import composeship.core.generated.resources.Res
 import composeship.core.generated.resources.not_supported_on_web
 import org.jetbrains.compose.resources.stringResource
@@ -50,6 +51,8 @@ fun main() {
                     firebaseViewModel,
                     modifier
                 )
+
+                Feature.PASSWORD_GENERATOR -> PasswordGeneratorScreen(modifier)
 
                 else -> Text(
                     stringResource(Res.string.not_supported_on_web),

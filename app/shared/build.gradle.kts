@@ -8,6 +8,11 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.composeship.app.shared.generated.resources"
+}
+
 kotlin {
     listOf(
         iosArm64(),
