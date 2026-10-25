@@ -70,7 +70,7 @@ fun ReleaseProcessStep(
     var autoScroll by remember { mutableStateOf(true) }
 
     @Suppress("DEPRECATION")
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
 
     // Fixed auto-scroll logic: use scrollToItem for immediate response
     LaunchedEffect(state.releaseLogs.size) {
