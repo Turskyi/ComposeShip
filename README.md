@@ -3,6 +3,12 @@
 This is a Compose Multiplatform project targeting Android, iOS, Web, Desktop (
 JVM), Server. It is designed as a suite of developer utility tools.
 
+### Testing the App:
+
+Join our testing program and provide valuable feedback:
+
+- [Android App Tester Invite](https://appdistribution.firebase.dev/i/c32c55af9803d74d)
+
 ## Project Structure
 
 * [/app/iosApp](./app/iosApp/iosApp) contains an iOS application. Even if you’re

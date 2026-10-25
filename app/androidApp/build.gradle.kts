@@ -10,7 +10,7 @@ plugins {
 
 
 val keyPropertiesFile: File = rootProject.file(
-    "app/src/main/key.properties",
+    "app/androidApp/src/main/key.properties",
 )
 
 val keyProperties: Properties = Properties()
@@ -65,6 +65,15 @@ val signingKeyReleaseKeyPassword: String = keyProperties.getProperty(
     "",
 )
 
+fun resolveSigningKey(path: String): File {
+    val moduleRelativeFile = file(path)
+    return if (moduleRelativeFile.exists()) {
+        moduleRelativeFile
+    } else {
+        rootProject.file("app").resolve(path).normalize()
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_11
@@ -73,6 +82,7 @@ kotlin {
 dependencies {
     implementation(libs.firebase.analytics)
     implementation(projects.app.shared)
+    implementation(projects.featureCloudRunDeploy)
 
     implementation(libs.androidx.activity.compose)
 
@@ -111,7 +121,7 @@ android {
                 keyAlias = cmKeyAlias
                 keyPassword = cmKeyPassword
             } else if (signingKeyDebugPath.isNotEmpty()) {
-                storeFile = file(signingKeyDebugPath)
+                storeFile = resolveSigningKey(signingKeyDebugPath)
                 storePassword = signingKeyDebugPassword
                 keyAlias = signingKeyDebugKey
                 keyPassword = signingKeyDebugKeyPassword
@@ -135,7 +145,7 @@ android {
                 keyAlias = cmKeyAlias
                 keyPassword = cmKeyPassword
             } else if (signingKeyReleasePath.isNotEmpty()) {
-                storeFile = file(signingKeyReleasePath)
+                storeFile = resolveSigningKey(signingKeyReleasePath)
                 storePassword = signingKeyReleasePassword
                 keyAlias = signingKeyReleaseKey
                 keyPassword = signingKeyReleaseKeyPassword
