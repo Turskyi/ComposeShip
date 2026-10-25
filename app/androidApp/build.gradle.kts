@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.googleGmsGoogleServices)
 }
 
 
@@ -70,6 +71,7 @@ kotlin {
     }
 }
 dependencies {
+    implementation(libs.firebase.analytics)
     implementation(projects.app.shared)
 
     implementation(libs.androidx.activity.compose)

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "805215776178",
+    "project_id": "composeship",
+    "storage_bucket": "composeship.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:805215776178:android:ac615ea0bfc519f59fc8ab",
+        "android_client_info": {
+          "package_name": "com.composeship"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDI7OI8kP6efASyDKtau0gGnPHjxfaUf6c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
