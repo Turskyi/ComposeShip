@@ -117,4 +117,5 @@
     <string name="wear_service_account_label">Service Account JSON Path</string>
     <string name="wear_service_account_info_title">Service Account</string>
     <string name="wear_service_account_info_text">The JSON key file from your Google Play Console service account. This allows the tool to authenticate and upload the AAB to Google Play automatically.</string>
+    <string name="wear_release_title">Wear OS App Release Tool</string>
 </resources>

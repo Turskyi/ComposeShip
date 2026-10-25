@@ -107,4 +107,5 @@
     <string name="wear_service_account_label">Шлях до JSON сервісного акаунта</string>
     <string name="wear_service_account_info_title">Сервісний акаунт</string>
     <string name="wear_service_account_info_text">Файл ключа JSON вашого сервісного акаунта Google Play Console. Це дозволяє інструменту автоматично проходити автентифікацію та завантажувати AAB у Google Play.</string>
+    <string name="wear_release_title">Інструмент релізу додатків Wear OS</string>
 </resources>
