@@ -50,6 +50,12 @@ class DesktopFileSystemService : FileSystemService {
     }
 
     override fun listFiles(path: String): List<String> {
-        return File(path).listFiles()?.map { it.absolutePath } ?: emptyList()
+        return File(path).listFiles()?.map { file ->
+            try {
+                file.canonicalPath
+            } catch (_: Exception) {
+                file.absolutePath
+            }
+        } ?: emptyList()
     }
 }

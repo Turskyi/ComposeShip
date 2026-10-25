@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -28,17 +27,18 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.Launch
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Launch
-import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
@@ -47,13 +47,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -66,7 +70,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
@@ -379,7 +383,7 @@ fun CategorySelectionStep(
                     )
                 },
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable, true).fillMaxWidth()
+                modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true).fillMaxWidth()
             )
 
             ExposedDropdownMenu(
@@ -590,7 +594,7 @@ fun IdentitySelectionStep(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CredentialsStep(
     state: MacOsReleaseState,
@@ -687,35 +691,46 @@ fun CredentialsStep(
             ) {
                 state.detectedApiKeyFiles.forEach { path ->
                     val filename = path.substringAfterLast("/")
-                    FilterChip(
-                        selected = state.apiKeyPath == path,
-                        onClick = {
-                            val keyIdMatch =
-                                Regex("AuthKey_([A-Z0-9]{10})\\.p8").find(
-                                    filename
+                    val labelText = getUniquePathLabel(path, state.detectedApiKeyFiles)
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+                        tooltip = {
+                            PlainTooltip {
+                                Text(path)
+                            }
+                        },
+                        state = rememberTooltipState()
+                    ) {
+                        FilterChip(
+                            selected = state.apiKeyPath == path,
+                            onClick = {
+                                val keyIdMatch =
+                                    Regex("AuthKey_([A-Z0-9]{10})\\.p8").find(
+                                        filename
+                                    )
+                                val detectedKeyId = keyIdMatch?.groupValues?.get(1)
+                                    ?: state.apiKeyId
+                                viewModel.onCredentialsChanged(
+                                    state.apiIssuerId,
+                                    detectedKeyId,
+                                    path
                                 )
-                            val detectedKeyId = keyIdMatch?.groupValues?.get(1)
-                                ?: state.apiKeyId
-                            viewModel.onCredentialsChanged(
-                                state.apiIssuerId,
-                                detectedKeyId,
-                                path
-                            )
-                        },
-                        label = {
-                            Text(
-                                filename,
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Key,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    )
+                            },
+                            label = {
+                                Text(
+                                    labelText,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Key,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -865,7 +880,7 @@ fun ReleaseProcessStep(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var autoScroll by remember { mutableStateOf(true) }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager = LocalClipboard.current
 
     // Fixed auto-scroll logic: use scrollToItem for immediate response
     LaunchedEffect(state.releaseLogs.size) {
@@ -951,14 +966,14 @@ fun ReleaseProcessStep(
                 Button(
                     onClick = { uriHandler.openUri("https://appstoreconnect.apple.com/apps/${state.appStoreId}/testflight/macos") }
                 ) {
-                    Icon(Icons.Default.Launch, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.AutoMirrored.Filled.Launch, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Open TestFlight")
                 }
                 OutlinedButton(
                     onClick = { uriHandler.openUri("https://appstoreconnect.apple.com/apps/${state.appStoreId}/distribution/macos/version/inflight") }
                 ) {
-                    Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Open Distribution")
                 }
@@ -1092,3 +1107,21 @@ fun ReleaseProcessStep(
         }
     }
 }
+
+private fun getUniquePathLabel(path: String, allPaths: List<String>): String {
+    val filename = path.substringAfterLast("/")
+    val parts = path.split("/").filter { it.isNotEmpty() }
+    if (parts.isEmpty()) return path
+
+    for (takeLastCount in 1..parts.size) {
+        val suffix = parts.takeLast(takeLastCount).joinToString("/")
+        val matchingCount = allPaths.count { p ->
+            p.split("/").filter { it.isNotEmpty() }.takeLast(takeLastCount).joinToString("/") == suffix
+        }
+        if (matchingCount == 1) {
+            return suffix
+        }
+    }
+    return filename
+}
+
