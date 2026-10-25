@@ -10,6 +10,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2.3.3
 
+      - name: Write google-services.json file
+        run: |
+          cd app/androidApp
+          echo $GOOGLE_SERVICES | base64 -d > google-services.json
+        env:
+          GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
+
       - name: Write key.properties file
         run: |
           echo $KEY_PROPERTIES | base64 -d > app/androidApp/src/main/key.properties
