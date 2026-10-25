@@ -68,6 +68,7 @@ fun ReleaseProcessStep(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var autoScroll by remember { mutableStateOf(true) }
+
     @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
 
@@ -117,7 +118,9 @@ fun ReleaseProcessStep(
             Button(
                 onClick = { viewModel.startRelease() },
                 enabled = !state.isReleasing && !state.releaseSuccess,
-                modifier = if (state.isReleasing) Modifier.weight(1f) else Modifier
+                modifier = if (state.isReleasing)
+                    Modifier.weight(1f)
+                else Modifier
             ) {
                 Text(
                     if (state.releaseSuccess)
@@ -153,16 +156,32 @@ fun ReleaseProcessStep(
             Spacer(modifier = Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
-                    onClick = { uriHandler.openUri("https://appstoreconnect.apple.com/apps/${state.appStoreId}/testflight/macos") }
+                    onClick = {
+                        uriHandler.openUri(
+                            "https://appstoreconnect.apple.com/apps/${state.appStoreId}/testflight/macos"
+                        )
+                    }
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Launch, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(
+                        Icons.AutoMirrored.Filled.Launch,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Open TestFlight")
                 }
                 OutlinedButton(
-                    onClick = { uriHandler.openUri("https://appstoreconnect.apple.com/apps/${state.appStoreId}/distribution/macos/version/inflight") }
+                    onClick = {
+                        uriHandler.openUri(
+                            "https://appstoreconnect.apple.com/apps/${state.appStoreId}/distribution/macos/version/inflight"
+                        )
+                    }
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(
+                        Icons.AutoMirrored.Filled.OpenInNew,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Open Distribution")
                 }
@@ -203,7 +222,8 @@ fun ReleaseProcessStep(
             }
             TextButton(onClick = { showLogs = !showLogs }) {
                 Text(
-                    if (showLogs) stringResource(Res.string.hide_details) else stringResource(
+                    if (showLogs) stringResource(Res.string.hide_details)
+                    else stringResource(
                         Res.string.show_details
                     )
                 )
@@ -254,7 +274,9 @@ fun ReleaseProcessStep(
                             onClick = {
                                 autoScroll = true
                                 scope.launch {
-                                    listState.animateScrollToItem(state.releaseLogs.size - 1)
+                                    listState.animateScrollToItem(
+                                        state.releaseLogs.size - 1,
+                                    )
                                 }
                             },
                             modifier = Modifier.size(40.dp),
@@ -266,7 +288,11 @@ fun ReleaseProcessStep(
                             )
                         }
                     }
-                    val showJumpToTop by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
+                    val showJumpToTop by remember {
+                        derivedStateOf {
+                            listState.firstVisibleItemIndex > 0
+                        }
+                    }
                     if (showJumpToTop) {
                         FloatingActionButton(
                             onClick = {
@@ -278,7 +304,10 @@ fun ReleaseProcessStep(
                             modifier = Modifier.size(40.dp),
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         ) {
-                            Icon(Icons.Default.KeyboardArrowUp, "Jump to top")
+                            Icon(
+                                Icons.Default.KeyboardArrowUp,
+                                "Jump to top",
+                            )
                         }
                     }
                 }
