@@ -121,9 +121,56 @@ class DesktopGcloudService(
                 return@flow
             }
 
+            val repository = java.io.File(tempPath)
+            if (java.io.File(repository, "gradlew").exists() &&
+                java.io.File(repository, "server").isDirectory
+            ) {
+                emit(ProcessOutput.Stdout("Building Gradle server distribution for the Dockerfile..."))
+                val gradlew = if (System.getProperty("os.name").lowercase().contains("win")) {
+                    "gradlew.bat"
+                } else {
+                    "./gradlew"
+                }
+                var buildExitCode: Int? = null
+                var buildFailedToStart = false
+                processService.execute(
+                    listOf(gradlew, ":server:installDist", "--no-daemon"),
+                    directory = tempPath
+                ).collect { output ->
+                    when (output) {
+                        is ProcessOutput.Complete -> buildExitCode = output.exitCode
+                        is ProcessOutput.Error -> {
+                            buildFailedToStart = true
+                            emit(output)
+                        }
+                        else -> emit(output)
+                    }
+                }
+
+                if (buildFailedToStart) return@flow
+                if (buildExitCode != 0) {
+                    if (buildExitCode == null) {
+                        emit(ProcessOutput.Error(IllegalStateException(
+                            "Gradle server build finished without an exit code"
+                        )))
+                    } else {
+                        emit(ProcessOutput.Complete(buildExitCode))
+                    }
+                    return@flow
+                }
+            }
+
+            val sourceDirectory = findDeploySourceDirectory(tempPath)
+                ?: run {
+                    emit(ProcessOutput.Error(IllegalStateException(
+                        "GitHub repository does not contain a Dockerfile. Cloud Run source deploy requires a Dockerfile in the repository root or a project subdirectory."
+                    )))
+                    return@flow
+                }
+
             val deployCommand = mutableListOf(
                 "gcloud", "run", "deploy", serviceName,
-                "--source", tempPath,
+                "--source", sourceDirectory,
                 "--platform", "managed",
                 "--region", region,
                 "--project", gcloudProjectId,
@@ -137,6 +184,7 @@ class DesktopGcloudService(
                 deployCommand.add("--set-env-vars=$envString")
             }
 
+            emit(ProcessOutput.Stdout("Using source directory: $sourceDirectory"))
             emit(ProcessOutput.Stdout("Executing: ${deployCommand.joinToString(" ")}"))
             emit(ProcessOutput.Stdout("Note: Cloud Build from the cloned repository may take 3-10 minutes. Streaming output below..."))
             emitAll(processService.execute(deployCommand, directory = tempPath))
@@ -145,6 +193,20 @@ class DesktopGcloudService(
         } finally {
             tempDir.toFile().deleteRecursively()
         }
+    }
+
+    private fun findDeploySourceDirectory(repoPath: String): String? {
+        val repoDir = java.io.File(repoPath)
+        val rootDockerfile = java.io.File(repoDir, "Dockerfile")
+        if (rootDockerfile.exists()) return repoDir.absolutePath
+
+        val serverDockerfile = java.io.File(repoDir, "server/Dockerfile")
+        if (serverDockerfile.exists()) return java.io.File(repoDir, "server").absolutePath
+
+        return repoDir.walkTopDown()
+            .filter { it.isFile && it.name == "Dockerfile" }
+            .map { it.parentFile?.absolutePath }
+            .firstOrNull()
     }
 
     override fun getCurrentProjectId(): Flow<ProcessOutput> =
