@@ -6,6 +6,7 @@ import com.composeship.feature.cloudrundeploy.domain.GcloudService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import java.nio.file.Files
 
 class DesktopGcloudService(
     private val processService: ProcessService
@@ -92,33 +93,58 @@ class DesktopGcloudService(
         serviceName: String,
         envVars: Map<String, String>
     ): Flow<ProcessOutput> = flow {
-        emit(ProcessOutput.Stdout("Deploying from GitHub: $githubRepoUrl (branch: $githubBranch)..."))
-        
-        val deployCommand = mutableListOf(
-            "gcloud", "run", "deploy", serviceName,
-            "--source", githubRepoUrl,
-            "--platform", "managed",
-            "--region", region,
-            "--project", gcloudProjectId,
-            "--verbosity", "info",
-            "--allow-unauthenticated",
-            "--quiet" // Prevents interactive prompts from hanging the process
-        )
+        val tempDir = Files.createTempDirectory("composeship-cloud-run")
+        val tempPath = tempDir.toAbsolutePath().toString()
 
-        if (githubBranch.isNotBlank()) {
-            deployCommand.add("--branch")
-            deployCommand.add(githubBranch)
+        try {
+            emit(ProcessOutput.Stdout("Cloning repository $githubRepoUrl (branch: ${githubBranch.ifBlank { "default" }})..."))
+
+            val cloneCommand = if (githubBranch.isNotBlank()) {
+                listOf("git", "clone", "-b", githubBranch, "--single-branch", githubRepoUrl, ".")
+            } else {
+                listOf("git", "clone", "--single-branch", githubRepoUrl, ".")
+            }
+
+            var cloneExitCode = -1
+            processService.execute(cloneCommand, directory = tempPath).collect { output ->
+                if (output is ProcessOutput.Complete) {
+                    cloneExitCode = output.exitCode
+                } else {
+                    emit(output)
+                }
+            }
+
+            if (cloneExitCode != 0) {
+                if (cloneExitCode != -1) {
+                    emit(ProcessOutput.Complete(cloneExitCode))
+                }
+                return@flow
+            }
+
+            val deployCommand = mutableListOf(
+                "gcloud", "run", "deploy", serviceName,
+                "--source", tempPath,
+                "--platform", "managed",
+                "--region", region,
+                "--project", gcloudProjectId,
+                "--verbosity", "info",
+                "--allow-unauthenticated",
+                "--quiet"
+            )
+
+            if (envVars.isNotEmpty()) {
+                val envString = envVars.entries.joinToString(",") { "${it.key}=${it.value}" }
+                deployCommand.add("--set-env-vars=$envString")
+            }
+
+            emit(ProcessOutput.Stdout("Executing: ${deployCommand.joinToString(" ")}"))
+            emit(ProcessOutput.Stdout("Note: Cloud Build from the cloned repository may take 3-10 minutes. Streaming output below..."))
+            emitAll(processService.execute(deployCommand, directory = tempPath))
+        } catch (e: Exception) {
+            emit(ProcessOutput.Error(e))
+        } finally {
+            tempDir.toFile().deleteRecursively()
         }
-
-        if (envVars.isNotEmpty()) {
-            val envString = envVars.entries.joinToString(",") { "${it.key}=${it.value}" }
-            deployCommand.add("--set-env-vars=$envString")
-        }
-
-        emit(ProcessOutput.Stdout("Executing: ${deployCommand.joinToString(" ")}"))
-        emit(ProcessOutput.Stdout("Note: Remote Cloud Build from GitHub may take 3-10 minutes. Streaming output below..."))
-
-        emitAll(processService.execute(deployCommand))
     }
 
     override fun getCurrentProjectId(): Flow<ProcessOutput> =

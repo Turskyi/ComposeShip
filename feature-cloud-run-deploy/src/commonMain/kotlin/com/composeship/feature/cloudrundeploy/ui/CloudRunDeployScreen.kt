@@ -210,6 +210,7 @@ fun CloudRunDeployScreen(
                         supportingText = { state.projectValidationError?.let { Text(it) } }
                     )
                 } else {
+                    val githubValidationError = state.githubValidationError
                     Row(modifier = Modifier.fillMaxWidth()) {
                         OutlinedTextField(
                             value = state.githubRepoUrl,
@@ -217,7 +218,13 @@ fun CloudRunDeployScreen(
                             enabled = !state.isDeploying,
                             label = { Text("GitHub Repo URL") },
                             modifier = Modifier.weight(1f),
-                            placeholder = { Text("https://github.com/user/repo") }
+                            placeholder = { Text("https://github.com/user/repo") },
+                            isError = state.githubRepoUrl.isNotBlank() && githubValidationError != null,
+                            supportingText = {
+                                if (state.githubRepoUrl.isNotBlank() && githubValidationError != null) {
+                                    Text(githubValidationError)
+                                }
+                            }
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         OutlinedTextField(
@@ -225,7 +232,13 @@ fun CloudRunDeployScreen(
                             onValueChange = { viewModel.onGithubBranchChanged(it) },
                             enabled = !state.isDeploying,
                             label = { Text("Branch") },
-                            modifier = Modifier.width(120.dp)
+                            modifier = Modifier.width(120.dp),
+                            isError = state.githubBranch.isNotBlank() && githubValidationError != null,
+                            supportingText = {
+                                if (state.githubBranch.isNotBlank() && githubValidationError != null) {
+                                    Text(githubValidationError)
+                                }
+                            }
                         )
                     }
                 }
@@ -357,7 +370,7 @@ fun CloudRunDeployScreen(
                 val canDeploy = if (state.deploySource == DeploySource.LOCAL) {
                     state.isProjectValid && state.gcloudProjectId.isNotEmpty()
                 } else {
-                    state.githubRepoUrl.isNotEmpty() && state.gcloudProjectId.isNotEmpty()
+                    state.gcloudProjectId.isNotEmpty() && viewModel.validateGithubConfig(state.githubRepoUrl, state.githubBranch) == null
                 }
 
                 Row(

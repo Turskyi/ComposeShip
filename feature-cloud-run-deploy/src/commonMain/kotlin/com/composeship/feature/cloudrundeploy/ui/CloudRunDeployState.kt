@@ -7,7 +7,7 @@ data class CloudRunDeployState(
     val projectRoot: String = "",
     val isProjectValid: Boolean = false,
     val projectValidationError: String? = null,
-    
+
     val gcloudProjectId: String = "",
     /**
      * The Google Cloud region where the service will be deployed.
@@ -34,5 +34,6 @@ data class CloudRunDeployState(
 
     val deploySource: DeploySource = DeploySource.LOCAL,
     val githubRepoUrl: String = "",
-    val githubBranch: String = "master"
+    val githubBranch: String = "master",
+    val githubValidationError: String? = null
 )

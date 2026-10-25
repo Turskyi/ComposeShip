@@ -109,11 +109,27 @@ class CloudRunDeployViewModel(
     }
 
     fun onGithubRepoUrlChanged(url: String) {
-        _state.update { it.copy(githubRepoUrl = url) }
+        _state.update { it.copy(githubRepoUrl = url, githubValidationError = null, deployError = null) }
     }
 
     fun onGithubBranchChanged(branch: String) {
-        _state.update { it.copy(githubBranch = branch) }
+        _state.update { it.copy(githubBranch = branch, githubValidationError = null, deployError = null) }
+    }
+
+    fun validateGithubConfig(repoUrl: String = _state.value.githubRepoUrl, branch: String = _state.value.githubBranch): String? {
+        if (repoUrl.isBlank()) return "GitHub repository URL is required"
+
+        val trimmedUrl = repoUrl.trim()
+        val githubUrlPattern = Regex("^https?://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\\.git)?/?$")
+        if (!githubUrlPattern.matches(trimmedUrl)) {
+            return "Use a valid GitHub HTTPS URL, for example: https://github.com/user/repo"
+        }
+
+        if (branch.isBlank()) return "Git branch is required"
+        if (branch.contains(" ")) return "Branch name cannot contain spaces"
+        if (branch == "." || branch == "..") return "Invalid branch name"
+
+        return null
     }
 
     fun autoFetchProjectId() {
@@ -195,6 +211,14 @@ class CloudRunDeployViewModel(
         if (currentState.gcloudProjectId.isEmpty()) {
             _state.update { it.copy(deployError = "Google Cloud Project ID is required") }
             return
+        }
+
+        if (currentState.deploySource == DeploySource.GITHUB) {
+            val githubError = validateGithubConfig(currentState.githubRepoUrl, currentState.githubBranch)
+            if (githubError != null) {
+                _state.update { it.copy(githubValidationError = githubError, deployError = githubError) }
+                return
+            }
         }
 
         deployJob?.cancel()
