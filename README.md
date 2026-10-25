@@ -1,3 +1,10 @@
+[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner-direct-single.svg)](https://stand-with-ukraine.pp.ua)
+[![Regression Unit Tests](https://github.com/Turskyi/ComposeShip/actions/workflows/regression_tests.yml/badge.svg)](https://github.com/Turskyi/ComposeShip/actions/workflows/regression_tests.yml)
+[![Upload Android Build to App Tester](https://github.com/Turskyi/ComposeShip/actions/workflows/android_compose_ci.yml/badge.svg)](https://github.com/Turskyi/ComposeShip/actions/workflows/android_compose_ci.yml)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/Turskyi/ComposeShip)
+[![wakatime](https://wakatime.com/badge/user/f9df5074-b4ea-4c17-b001-fff428ab82aa/project/138062c7-c898-4532-b554-bf709d077627.svg)](https://wakatime.com/badge/user/f9df5074-b4ea-4c17-b001-fff428ab82aa/project/138062c7-c898-4532-b554-bf709d077627)
+<img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/Turskyi/ComposeShip">
+
 # ComposeShip
 
 This is a Compose Multiplatform project targeting Android, iOS, Web, Desktop (
