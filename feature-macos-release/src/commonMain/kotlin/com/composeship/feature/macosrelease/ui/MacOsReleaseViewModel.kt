@@ -167,34 +167,42 @@ class MacOsReleaseViewModel(
     }
 
     private fun detectCategory(path: String) {
-        val possibleSubprojects =
-            listOf("", "composeApp", "app/desktopApp", "desktop")
+        val knownSubprojects = listOf("", "composeApp", "app", "desktopApp", "app/desktopApp", "desktop", "macos", "macOS", "shared")
+        val possibleSubprojects = mutableListOf<String>()
+        possibleSubprojects.addAll(knownSubprojects)
 
-        for (sub in possibleSubprojects) {
+        try {
+            if (fileSystemService.exists(path)) {
+                val subFiles = fileSystemService.listFiles(path)
+                for (sub in subFiles) {
+                    val relName = sub.substringAfterLast("/").substringAfterLast("\\")
+                    if (relName.isNotEmpty() && !relName.startsWith(".") && relName != "build") {
+                        if (fileSystemService.exists("$sub/build.gradle.kts") || fileSystemService.exists("$sub/build.gradle")) {
+                            if (!possibleSubprojects.contains(relName)) {
+                                possibleSubprojects.add(relName)
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            /* ignore listing errors */
+        }
+
+        for (sub in possibleSubprojects.distinct()) {
             val subPath = if (sub.isEmpty()) path else "$path/$sub"
 
-            // 1. Check build.gradle.kts or build.gradle
-            val buildFiles = listOf("$subPath/build.gradle.kts", "$subPath/build.gradle")
+            // 1. Check build files
+            val buildFiles = listOf(
+                "$subPath/build.gradle.kts",
+                "$subPath/build.gradle",
+                "$subPath/gradle.properties"
+            )
             for (buildFilePath in buildFiles) {
                 if (fileSystemService.exists(buildFilePath)) {
                     val content = fileSystemService.readFile(buildFilePath) ?: ""
-                    
-                    // Try direct property: category = "..."
-                    val categoryMatch =
-                        Regex("""category\s*=\s*["']([^"']+)["']""").find(content)
-                    if (categoryMatch != null) {
-                        val category = categoryMatch.groupValues[1]
-                        _state.update { it.copy(selectedCategory = category) }
-                        return
-                    }
-
-                    // Try extraKeysRawXml containing LSApplicationCategoryType
-                    val extraKeysMatch = Regex(
-                        """LSApplicationCategoryType</key>\s*<string>([^<]+)</string>""",
-                        RegexOption.IGNORE_CASE
-                    ).find(content)
-                    if (extraKeysMatch != null) {
-                        val category = extraKeysMatch.groupValues[1].trim()
+                    val category = extractCategoryFromContent(content)
+                    if (category != null) {
                         _state.update { it.copy(selectedCategory = category) }
                         return
                     }
@@ -205,22 +213,99 @@ class MacOsReleaseViewModel(
             val plistLocations = listOf(
                 "$subPath/src/desktopMain/resources/Info.plist",
                 "$subPath/src/main/resources/Info.plist",
+                "$subPath/src/macosMain/resources/Info.plist",
                 "$subPath/Info.plist"
             )
             for (plistPath in plistLocations) {
                 if (fileSystemService.exists(plistPath)) {
                     val content = fileSystemService.readFile(plistPath) ?: ""
-                    val categoryMatch = Regex(
-                        """<key>LSApplicationCategoryType</key>\s*<string>([^<]+)</string>""",
-                        RegexOption.IGNORE_CASE
-                    ).find(content)
-                    if (categoryMatch != null) {
-                        val category = categoryMatch.groupValues[1].trim()
+                    val category = extractCategoryFromContent(content)
+                    if (category != null) {
                         _state.update { it.copy(selectedCategory = category) }
                         return
                     }
                 }
             }
+        }
+
+        // 3. Check root files as fallback
+        val rootFiles = listOf(
+            "$path/gradle.properties",
+            "$path/AI_MACOS_RELEASE.md",
+            "$path/.macos-release"
+        )
+        for (rootFilePath in rootFiles) {
+            if (fileSystemService.exists(rootFilePath)) {
+                val content = fileSystemService.readFile(rootFilePath) ?: ""
+                val category = extractCategoryFromContent(content)
+                if (category != null) {
+                    _state.update { it.copy(selectedCategory = category) }
+                    return
+                }
+            }
+        }
+    }
+
+    private fun extractCategoryFromContent(content: String): String? {
+        if (content.isEmpty()) return null
+
+        // 1. Direct match for public.app-category.<name> following LSApplicationCategoryType
+        val lsAppCatFullMatch = Regex(
+            """LSApplicationCategoryType[\s\S]*?(public\.app-category\.[\w\-]+)""",
+            RegexOption.IGNORE_CASE
+        ).find(content)
+        if (lsAppCatFullMatch != null) {
+            return lsAppCatFullMatch.groupValues[1]
+        }
+
+        // 2. Match LSApplicationCategoryType followed by <string>...</string> tag
+        val lsAppCatTagMatch = Regex(
+            """LSApplicationCategoryType[\s\S]*?<string>([\s\S]*?)</string>""",
+            RegexOption.IGNORE_CASE
+        ).find(content)
+        if (lsAppCatTagMatch != null) {
+            val raw = lsAppCatTagMatch.groupValues[1]
+                .replace("\"", "")
+                .replace("'", "")
+                .replace("+", "")
+                .replace("\n", "")
+                .replace("\r", "")
+                .trim()
+            if (raw.isNotEmpty()) {
+                return normalizeCategory(raw)
+            }
+        }
+
+        // 3. Match Gradle DSL properties: appCategory, category, LSApplicationCategoryType
+        val propertyMatch = Regex(
+            """(?:appCategory|category|LSApplicationCategoryType)\s*(?:=\s*|\.\s*set\s*\(\s*)["']([^"']+)["']""",
+            RegexOption.IGNORE_CASE
+        ).find(content)
+        if (propertyMatch != null) {
+            val raw = propertyMatch.groupValues[1].trim()
+            if (raw.isNotEmpty()) {
+                return normalizeCategory(raw)
+            }
+        }
+
+        // 4. Standalone public.app-category.<name>
+        val standaloneMatch = Regex(
+            """(public\.app-category\.[\w\-]+)""",
+            RegexOption.IGNORE_CASE
+        ).find(content)
+        if (standaloneMatch != null) {
+            return standaloneMatch.groupValues[1]
+        }
+
+        return null
+    }
+
+    private fun normalizeCategory(category: String): String {
+        val trimmed = category.trim()
+        return when {
+            trimmed.startsWith("public.app-category.", ignoreCase = true) -> trimmed
+            trimmed.startsWith("app-category.", ignoreCase = true) -> "public.$trimmed"
+            else -> "public.app-category.$trimmed"
         }
     }
 
