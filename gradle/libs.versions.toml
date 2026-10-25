@@ -1,4 +1,8 @@
 [versions]
+applicationId = "com.composeship"
+versionName = "0.0.1"
+versionCode = "1"
+
 agp = "9.4.1"
 android-compileSdk = "37"
 android-minSdk = "24"
