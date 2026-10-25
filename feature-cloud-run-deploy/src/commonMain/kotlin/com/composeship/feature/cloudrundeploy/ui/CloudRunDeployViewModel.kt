@@ -109,7 +109,15 @@ class CloudRunDeployViewModel(
     }
 
     fun onGithubRepoUrlChanged(url: String) {
-        _state.update { it.copy(githubRepoUrl = url, githubValidationError = null, deployError = null) }
+        val branchFromUrl = parseGithubRepoUrl(url)?.branch
+        _state.update {
+            it.copy(
+                githubRepoUrl = url,
+                githubBranch = branchFromUrl ?: it.githubBranch,
+                githubValidationError = null,
+                deployError = null
+            )
+        }
     }
 
     fun onGithubBranchChanged(branch: String) {
@@ -119,17 +127,35 @@ class CloudRunDeployViewModel(
     fun validateGithubConfig(repoUrl: String = _state.value.githubRepoUrl, branch: String = _state.value.githubBranch): String? {
         if (repoUrl.isBlank()) return "GitHub repository URL is required"
 
-        val trimmedUrl = repoUrl.trim()
-        val githubUrlPattern = Regex("^https?://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\\.git)?/?$")
-        if (!githubUrlPattern.matches(trimmedUrl)) {
+        val parsedRepo = parseGithubRepoUrl(repoUrl)
+        if (parsedRepo == null) {
             return "Use a valid GitHub HTTPS URL, for example: https://github.com/user/repo"
         }
 
-        if (branch.isBlank()) return "Git branch is required"
-        if (branch.contains(" ")) return "Branch name cannot contain spaces"
-        if (branch == "." || branch == "..") return "Invalid branch name"
+        val selectedBranch = branch.trim()
+        if (selectedBranch.isBlank()) return "Git branch is required"
+        if (selectedBranch.contains(" ")) return "Branch name cannot contain spaces"
+        if (selectedBranch == "." || selectedBranch == "..") return "Invalid branch name"
 
         return null
+    }
+
+    private data class ParsedGithubRepo(val repositoryUrl: String, val branch: String?)
+
+    private fun parseGithubRepoUrl(url: String): ParsedGithubRepo? {
+        val cleanedUrl = url.trim().substringBefore('?').substringBefore('#').trimEnd('/')
+        val treeUrlMatch = githubTreeUrlPattern.matchEntire(cleanedUrl)
+        val repositoryUrl = treeUrlMatch?.groupValues?.get(1) ?: cleanedUrl
+        if (!githubRepoUrlPattern.matches(repositoryUrl)) return null
+
+        return ParsedGithubRepo(repositoryUrl, treeUrlMatch?.groupValues?.get(2))
+    }
+
+    private companion object {
+        val githubRepoUrlPattern =
+            Regex("^https?://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\\.git)?$")
+        val githubTreeUrlPattern =
+            Regex("^(https?://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\\.git)?)/tree/(.+)$")
     }
 
     fun autoFetchProjectId() {
@@ -241,8 +267,9 @@ class CloudRunDeployViewModel(
                     envVars = currentState.envVars
                 )
             } else {
+                val githubRepo = parseGithubRepoUrl(currentState.githubRepoUrl)
                 gcloudService.deployFromGitHub(
-                    githubRepoUrl = currentState.githubRepoUrl,
+                    githubRepoUrl = githubRepo?.repositoryUrl ?: currentState.githubRepoUrl,
                     githubBranch = currentState.githubBranch,
                     gcloudProjectId = currentState.gcloudProjectId,
                     region = currentState.region,
