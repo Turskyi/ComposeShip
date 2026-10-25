@@ -43,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
@@ -69,7 +68,8 @@ fun ReleaseProcessStep(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var autoScroll by remember { mutableStateOf(true) }
-    val clipboardManager = LocalClipboard.current
+    @Suppress("DEPRECATION")
+    val clipboardManager = LocalClipboardManager.current
 
     // Fixed auto-scroll logic: use scrollToItem for immediate response
     LaunchedEffect(state.releaseLogs.size) {
