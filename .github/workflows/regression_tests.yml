@@ -51,7 +51,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run app unit tests
-        run: ./gradlew :androidApp:testDebugUnitTest
+        run: ./gradlew :app:androidApp:testDebugUnitTest
 
       - name: Run server unit tests
         run: ./gradlew :server:test
