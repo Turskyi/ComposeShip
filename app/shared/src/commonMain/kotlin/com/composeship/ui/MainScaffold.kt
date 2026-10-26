@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Contrast
+import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Key
@@ -59,6 +60,7 @@ import composeship.core.generated.resources.theme_light
 import composeship.core.generated.resources.theme_system
 import com.composeship.app.shared.generated.resources.Res as SharedRes
 import com.composeship.app.shared.generated.resources.password_generator_title
+import com.composeship.app.shared.generated.resources.base64_title
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -151,6 +153,17 @@ fun MainScaffold(
                         label = {
                             Text(
                                 stringResource(SharedRes.string.password_generator_title),
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
+                        }
+                    )
+                    NavigationRailItem(
+                        selected = currentFeature == Feature.FILE_TO_BASE64,
+                        onClick = { viewModel.selectFeature(Feature.FILE_TO_BASE64) },
+                        icon = { Icon(Icons.Default.DataObject, contentDescription = null) },
+                        label = {
+                            Text(
+                                stringResource(SharedRes.string.base64_title),
                                 modifier = Modifier.padding(horizontal = 8.dp)
                             )
                         }

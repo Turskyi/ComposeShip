@@ -13,6 +13,7 @@ import com.composeship.feature.cloudrundeploy.data.service.PlaceholderGcloudServ
 import com.composeship.feature.cloudrundeploy.di.CloudRunDeployContainer
 import com.composeship.feature.cloudrundeploy.ui.CloudRunDeployScreen
 import com.composeship.ui.password.PasswordGeneratorScreen
+import com.composeship.ui.base64.Base64EncoderScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,6 +33,7 @@ class MainActivity : ComponentActivity() {
                 when (feature) {
                     Feature.CLOUD_RUN_DEPLOY -> CloudRunDeployScreen(cloudRunViewModel, modifier)
                     Feature.PASSWORD_GENERATOR -> PasswordGeneratorScreen(modifier)
+                    Feature.FILE_TO_BASE64 -> Base64EncoderScreen(modifier)
                     Feature.MACOS_RELEASE -> Text("Not supported on Android", modifier)
                     else -> Text("Not supported on Android", modifier)
                 }

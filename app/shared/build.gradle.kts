@@ -53,6 +53,7 @@ kotlin {
     
     sourceSets {
         androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
             implementation(libs.compose.uiToolingPreview)
         }
         commonMain.dependencies {
@@ -71,6 +72,9 @@ kotlin {
             implementation(libs.kotlin.test)
         }
         jsMain.dependencies {
+            implementation(libs.wrappers.browser)
+        }
+        wasmJsMain.dependencies {
             implementation(libs.wrappers.browser)
         }
     }

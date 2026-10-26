@@ -12,6 +12,7 @@ import com.composeship.feature.firebasedeploy.data.service.PlaceholderFirebaseSe
 import com.composeship.feature.firebasedeploy.di.FirebaseDeployContainer
 import com.composeship.feature.firebasedeploy.ui.FirebaseDeployScreen
 import com.composeship.ui.password.PasswordGeneratorScreen
+import com.composeship.ui.base64.Base64EncoderScreen
 import composeship.core.generated.resources.Res
 import composeship.core.generated.resources.not_supported_on_web
 import org.jetbrains.compose.resources.stringResource
@@ -53,6 +54,7 @@ fun main() {
                 )
 
                 Feature.PASSWORD_GENERATOR -> PasswordGeneratorScreen(modifier)
+                Feature.FILE_TO_BASE64 -> Base64EncoderScreen(modifier)
 
                 else -> Text(
                     stringResource(Res.string.not_supported_on_web),

@@ -1,4 +1,16 @@
 <resources>
+    <string name="base64_title">Файл у Base64</string>
+    <string name="base64_privacy_note">Кодування файлів відбувається локально на вашому пристрої. Вміст файлів не завантажується і не надсилається на сервер.</string>
+    <string name="base64_choose_file">Вибрати файл</string>
+    <string name="base64_select_file_hint">Виберіть локальний файл для кодування (до 50 МБ).</string>
+    <string name="base64_encode">Закодувати файл у Base64</string>
+    <string name="base64_output">Base64</string>
+    <string name="base64_output_placeholder">Тут з’явиться результат Base64.</string>
+    <string name="base64_copy">Копіювати Base64</string>
+    <string name="base64_clear">Очистити вибраний файл і результат</string>
+    <string name="base64_copied">Скопійовано</string>
+    <string name="base64_file_read_error">Не вдалося прочитати вибраний файл. Спробуйте ще раз.</string>
+    <string name="base64_file_too_large">Розмір файлу має бути не більше 50 МБ.</string>
     <string name="password_generator_title">Генератор паролів</string>
     <string name="password_length">Довжина пароля (4–64)</string>
     <string name="password_quantity">Кількість (1–20)</string>

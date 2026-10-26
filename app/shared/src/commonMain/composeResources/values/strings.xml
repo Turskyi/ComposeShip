@@ -1,4 +1,16 @@
 <resources>
+    <string name="base64_title">File to Base64</string>
+    <string name="base64_privacy_note">Encode files locally on your device. File contents are never uploaded or sent to a server.</string>
+    <string name="base64_choose_file">Choose a file</string>
+    <string name="base64_select_file_hint">Select a local file to encode (up to 50 MB).</string>
+    <string name="base64_encode">Encode file to Base64</string>
+    <string name="base64_output">Base64</string>
+    <string name="base64_output_placeholder">The Base64 result will appear here.</string>
+    <string name="base64_copy">Copy Base64</string>
+    <string name="base64_clear">Clear selected file and result</string>
+    <string name="base64_copied">Copied</string>
+    <string name="base64_file_read_error">Could not read the selected file. Please try again.</string>
+    <string name="base64_file_too_large">Files must be 50 MB or smaller.</string>
     <string name="password_generator_title">Password Generator</string>
     <string name="password_length">Password length (4–64)</string>
     <string name="password_quantity">Quantity (1–20)</string>
