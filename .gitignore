@@ -37,3 +37,4 @@ app/androidApp/src/main/key.properties
 
 .artifacts
 /app/androidApp/src/main/keystore/
+/firebase-debug.log
