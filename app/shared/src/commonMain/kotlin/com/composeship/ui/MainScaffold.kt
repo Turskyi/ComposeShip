@@ -178,7 +178,16 @@ fun MainScaffold(
                                         selected = currentFeature == entry.feature,
                                         onClick = { viewModel.selectFeature(entry.feature) },
                                         icon = { Icon(entry.icon, contentDescription = entry.label) },
-                                        label = { Text(entry.label) }
+                                        label = {
+                                            Text(
+                                                entry.label,
+                                                modifier = if (entry.feature == Feature.PASSWORD_GENERATOR) {
+                                                    Modifier.padding(horizontal = 12.dp)
+                                                } else {
+                                                    Modifier
+                                                }
+                                            )
+                                        }
                                     )
                                 }
                             }
