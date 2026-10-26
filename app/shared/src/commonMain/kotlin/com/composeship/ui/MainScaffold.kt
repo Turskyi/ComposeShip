@@ -58,6 +58,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composeship.MainViewModel
 import com.composeship.core.domain.model.Feature
+import com.composeship.core.domain.platform.PlatformType
 import com.composeship.core.domain.platform.getPlatform
 import com.composeship.core.theme.ComposeShipTheme
 import com.composeship.core.theme.ThemeMode
@@ -95,6 +96,7 @@ fun MainScaffold(
     val selectedLanguageCode by viewModel.selectedLanguageCode.collectAsStateWithLifecycle()
     val currentFeature by viewModel.currentFeature.collectAsStateWithLifecycle()
     val platform = remember { getPlatform() }
+    val isAndroid = platform.type == PlatformType.ANDROID
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     val macEntry = if (platform.isMac) {
@@ -105,8 +107,8 @@ fun MainScaffold(
     val navigationEntries = listOfNotNull(
         macEntry,
         NavigationEntry(Feature.CLOUD_RUN_DEPLOY, Icons.Default.CloudUpload, stringResource(Res.string.feature_cloud_run)),
-        NavigationEntry(Feature.FIREBASE_HOSTING, Icons.Default.Cloud, stringResource(Res.string.feature_firebase)),
-        NavigationEntry(Feature.WEAR_RELEASE, Icons.Default.Laptop, stringResource(Res.string.feature_wear)),
+        if (isAndroid) null else NavigationEntry(Feature.FIREBASE_HOSTING, Icons.Default.Cloud, stringResource(Res.string.feature_firebase)),
+        if (isAndroid) null else NavigationEntry(Feature.WEAR_RELEASE, Icons.Default.Laptop, stringResource(Res.string.feature_wear)),
         NavigationEntry(Feature.PASSWORD_GENERATOR, Icons.Default.Key, stringResource(SharedRes.string.password_generator_title)),
         NavigationEntry(Feature.FILE_TO_BASE64, Icons.Default.DataObject, stringResource(SharedRes.string.base64_title))
     )

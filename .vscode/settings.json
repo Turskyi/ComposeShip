@@ -1,4 +1,18 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "spellright.language": [
+        "en"
+    ],
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext",
+        "Log"
+    ],
+    "spellright.parserByClass": {
+        "Log": {
+            "parser": "code"
+        }
+    }
 }
