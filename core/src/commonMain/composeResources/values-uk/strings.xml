@@ -39,9 +39,7 @@
     <string name="hide_details">Приховати деталі</string>
 
     <string name="onboarding_title">Ласкаво просимо до ComposeShip</string>
-    <string name="onboarding_description">Ваш набір інструментів для розробки на Compose Multiplatform. Оптимізація робочого процесу для Android, iOS, Web та Desktop.</string>
-    <string name="onboarding_feature_macos">🚀 Інструмент випуску для macOS: Проста публікація в App Store.</string>
-    <string name="onboarding_feature_more">🛠 Більше інструментів незабаром: зміна розміру зображень, видалення фону та інше.</string>
+    <string name="onboarding_description">Набір практичних інструментів, які допомагають зробити робочий процес розробки ефективнішим.</string>
     <string name="get_started">Почати</string>
     <string name="skip">Пропустити</string>
 
@@ -77,6 +75,7 @@
 
     <string name="switch_language">Змінити мову</string>
     <string name="switch_theme">Змінити тему</string>
+    <string name="open_navigation_menu">Відкрити меню навігації</string>
 
     <string name="language_system">Системна</string>
     <string name="language_en">English</string>

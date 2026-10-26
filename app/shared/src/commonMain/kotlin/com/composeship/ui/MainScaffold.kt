@@ -1,6 +1,13 @@
 package com.composeship.ui
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,29 +20,39 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Laptop
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,129 +70,166 @@ import composeship.core.generated.resources.feature_wear
 import composeship.core.generated.resources.language_en
 import composeship.core.generated.resources.language_system
 import composeship.core.generated.resources.language_uk
+import composeship.core.generated.resources.open_navigation_menu
 import composeship.core.generated.resources.switch_language
 import composeship.core.generated.resources.switch_theme
 import composeship.core.generated.resources.theme_dark
 import composeship.core.generated.resources.theme_light
 import composeship.core.generated.resources.theme_system
 import com.composeship.app.shared.generated.resources.Res as SharedRes
-import com.composeship.app.shared.generated.resources.password_generator_title
 import com.composeship.app.shared.generated.resources.base64_title
+import com.composeship.app.shared.generated.resources.password_generator_title
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+
+private const val COMPACT_LAYOUT_WIDTH_DP = 600
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold(
     viewModel: MainViewModel,
+    showOnboarding: Boolean,
     content: @Composable (Modifier) -> Unit
 ) {
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val selectedLanguageCode by viewModel.selectedLanguageCode.collectAsStateWithLifecycle()
     val currentFeature by viewModel.currentFeature.collectAsStateWithLifecycle()
     val platform = remember { getPlatform() }
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
+    val macEntry = if (platform.isMac) {
+        NavigationEntry(Feature.MACOS_RELEASE, Icons.Default.Laptop, stringResource(Res.string.feature_macos))
+    } else {
+        null
+    }
+    val navigationEntries = listOfNotNull(
+        macEntry,
+        NavigationEntry(Feature.CLOUD_RUN_DEPLOY, Icons.Default.CloudUpload, stringResource(Res.string.feature_cloud_run)),
+        NavigationEntry(Feature.FIREBASE_HOSTING, Icons.Default.Cloud, stringResource(Res.string.feature_firebase)),
+        NavigationEntry(Feature.WEAR_RELEASE, Icons.Default.Laptop, stringResource(Res.string.feature_wear)),
+        NavigationEntry(Feature.PASSWORD_GENERATOR, Icons.Default.Key, stringResource(SharedRes.string.password_generator_title)),
+        NavigationEntry(Feature.FILE_TO_BASE64, Icons.Default.DataObject, stringResource(SharedRes.string.base64_title))
+    )
 
     ComposeShipTheme(themeMode = themeMode) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text(stringResource(Res.string.app_name)) },
-                    actions = {
-                        LanguageSwitcher(
-                            currentLanguage = selectedLanguageCode,
-                            onLanguageSelected = { viewModel.setLanguage(it) }
-                        )
-                        ThemeSwitcher(
-                            currentMode = themeMode,
-                            onModeSelected = { viewModel.setThemeMode(it) }
-                        )
-                    }
-                )
-            }
-        ) { paddingValues ->
-            Row(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-                NavigationRail(
-                    modifier = Modifier.zIndex(1f),
-                    containerColor = MaterialTheme.colorScheme.surface
-                ) {
-                    if (platform.isMac) {
-                        NavigationRailItem(
-                            selected = currentFeature == Feature.MACOS_RELEASE,
-                            onClick = { viewModel.selectFeature(Feature.MACOS_RELEASE) },
-                            icon = {
-                                Icon(
-                                    Icons.Default.Laptop,
-                                    contentDescription = null
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val compactLayout = maxWidth < COMPACT_LAYOUT_WIDTH_DP.dp
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                gesturesEnabled = compactLayout && !showOnboarding,
+                drawerContent = {
+                    if (compactLayout && !showOnboarding) {
+                        ModalDrawerSheet {
+                            navigationEntries.forEach { entry ->
+                                NavigationDrawerItem(
+                                    selected = currentFeature == entry.feature,
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            drawerState.close()
+                                            viewModel.selectFeature(entry.feature)
+                                        }
+                                    },
+                                    icon = { Icon(entry.icon, contentDescription = null) },
+                                    label = { Text(entry.label) },
+                                    modifier = Modifier.padding(horizontal = 12.dp)
                                 )
-                            },
-                            label = { Text(stringResource(Res.string.feature_macos)) }
+                            }
+                        }
+                    }
+                }
+            ) {
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = { AnimatedAppName() },
+                            actions = {
+                                LanguageSwitcher(
+                                    currentLanguage = selectedLanguageCode,
+                                    onLanguageSelected = { viewModel.setLanguage(it) }
+                                )
+                                ThemeSwitcher(
+                                    currentMode = themeMode,
+                                    onModeSelected = { viewModel.setThemeMode(it) }
+                                )
+                            }
                         )
                     }
-                    NavigationRailItem(
-                        selected = currentFeature == Feature.CLOUD_RUN_DEPLOY,
-                        onClick = { viewModel.selectFeature(Feature.CLOUD_RUN_DEPLOY) },
-                        icon = {
-                            Icon(
-                                Icons.Default.CloudUpload,
-                                contentDescription = null
-                            )
-                        },
-                        label = { Text(stringResource(Res.string.feature_cloud_run)) }
-                    )
-
-                    
-
-                    NavigationRailItem(
-                        selected = currentFeature == Feature.FIREBASE_HOSTING,
-                        onClick = { viewModel.selectFeature(Feature.FIREBASE_HOSTING) },
-                        icon = {
-                            Icon(
-                                Icons.Default.Cloud,
-                                contentDescription = null
-                            )
-                        },
-                        label = { Text(stringResource(Res.string.feature_firebase)) }
-                    )
-                    NavigationRailItem(
-                        selected = currentFeature == Feature.WEAR_RELEASE,
-                        onClick = { viewModel.selectFeature(Feature.WEAR_RELEASE) },
-                        icon = {
-                            Icon(
-                                Icons.Default.Laptop,
-                                contentDescription = null
-                            )
-                        },
-                        label = { Text(stringResource(Res.string.feature_wear)) }
-                    )
-                    NavigationRailItem(
-                        selected = currentFeature == Feature.PASSWORD_GENERATOR,
-                        onClick = { viewModel.selectFeature(Feature.PASSWORD_GENERATOR) },
-                        icon = { Icon(Icons.Default.Key, contentDescription = null) },
-                        label = {
-                            Text(
-                                stringResource(SharedRes.string.password_generator_title),
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            )
+                ) { paddingValues ->
+                    Row(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+                        if (!showOnboarding) {
+                            NavigationRail(
+                                modifier = Modifier.zIndex(1f),
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ) {
+                                if (compactLayout) {
+                                    IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
+                                        Icon(
+                                            Icons.Default.Menu,
+                                            contentDescription = stringResource(Res.string.open_navigation_menu)
+                                        )
+                                    }
+                                }
+                                navigationEntries.forEach { entry ->
+                                    if (compactLayout) {
+                                        NavigationRailItem(
+                                            selected = currentFeature == entry.feature,
+                                            onClick = { viewModel.selectFeature(entry.feature) },
+                                            icon = { Icon(entry.icon, contentDescription = entry.label) }
+                                        )
+                                    } else {
+                                        NavigationRailItem(
+                                            selected = currentFeature == entry.feature,
+                                            onClick = { viewModel.selectFeature(entry.feature) },
+                                            icon = { Icon(entry.icon, contentDescription = entry.label) },
+                                            label = { Text(entry.label) }
+                                        )
+                                    }
+                                }
+                            }
                         }
-                    )
-                    NavigationRailItem(
-                        selected = currentFeature == Feature.FILE_TO_BASE64,
-                        onClick = { viewModel.selectFeature(Feature.FILE_TO_BASE64) },
-                        icon = { Icon(Icons.Default.DataObject, contentDescription = null) },
-                        label = {
-                            Text(
-                                stringResource(SharedRes.string.base64_title),
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            )
-                        }
-                    )
-                }
 
-                Box(modifier = Modifier.weight(1f)) {
-                    content(Modifier)
+                        Box(modifier = Modifier.weight(1f)) {
+                            content(Modifier)
+                        }
+                    }
                 }
             }
         }
     }
+}
+
+private data class NavigationEntry(
+    val feature: Feature,
+    val icon: ImageVector,
+    val label: String
+)
+
+@Composable
+private fun AnimatedAppName() {
+    val transition = rememberInfiniteTransition(label = "appNameGradient")
+    val gradientOffset by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 5000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "appNameGradientOffset"
+    )
+    val brush = Brush.linearGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.tertiary,
+            MaterialTheme.colorScheme.primary
+        ),
+        start = Offset(1000f * gradientOffset, 0f),
+        end = Offset(1000f * (gradientOffset + 1f), 100f)
+    )
+
+    Text(
+        text = stringResource(Res.string.app_name),
+        style = MaterialTheme.typography.titleLarge.copy(brush = brush)
+    )
 }
 
 @Composable
@@ -215,10 +269,7 @@ private fun LanguageSwitcher(
                     },
                     trailingIcon = {
                         if (currentLanguage == code) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = "Selected"
-                            )
+                            Icon(Icons.Default.Check, contentDescription = "Selected")
                         }
                     }
                 )
@@ -277,10 +328,7 @@ private fun ThemeSwitcher(
                     },
                     trailingIcon = {
                         if (currentMode == mode) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = "Selected"
-                            )
+                            Icon(Icons.Default.Check, contentDescription = "Selected")
                         }
                     }
                 )

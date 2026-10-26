@@ -5,6 +5,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composeship.core.domain.model.Feature
 import com.composeship.core.domain.rememberAppLocale
@@ -23,11 +29,20 @@ fun App(
     val currentFeature by mainViewModel.currentFeature.collectAsStateWithLifecycle()
 
     key(selectedLanguageCode) {
-        MainScaffold(viewModel = mainViewModel) { modifier ->
+        MainScaffold(viewModel = mainViewModel, showOnboarding = showOnboarding) { modifier ->
             if (showOnboarding) {
                 OnboardingScreen(onDismiss = { mainViewModel.dismissOnboarding() })
             } else {
-                featureContent(currentFeature, modifier)
+                AnimatedContent(
+                    targetState = currentFeature,
+                    transitionSpec = {
+                        (fadeIn() + slideInHorizontally { it / 8 }) togetherWith
+                            (fadeOut() + slideOutHorizontally { -it / 8 })
+                    },
+                    label = "featureTransition"
+                ) { feature ->
+                    featureContent(feature, modifier)
+                }
             }
         }
     }
