@@ -141,6 +141,16 @@ fun MainScaffold(
                 Scaffold(
                     topBar = {
                         TopAppBar(
+                            navigationIcon = {
+                                if (compactLayout && !showOnboarding) {
+                                    IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
+                                        Icon(
+                                            Icons.Default.Menu,
+                                            contentDescription = stringResource(Res.string.open_navigation_menu)
+                                        )
+                                    }
+                                }
+                            },
                             title = { AnimatedAppName() },
                             actions = {
                                 LanguageSwitcher(
@@ -156,34 +166,18 @@ fun MainScaffold(
                     }
                 ) { paddingValues ->
                     Row(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-                        if (!showOnboarding) {
+                        if (!showOnboarding && !compactLayout) {
                             NavigationRail(
                                 modifier = Modifier.zIndex(1f),
                                 containerColor = MaterialTheme.colorScheme.surface
                             ) {
-                                if (compactLayout) {
-                                    IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
-                                        Icon(
-                                            Icons.Default.Menu,
-                                            contentDescription = stringResource(Res.string.open_navigation_menu)
-                                        )
-                                    }
-                                }
                                 navigationEntries.forEach { entry ->
-                                    if (compactLayout) {
-                                        NavigationRailItem(
-                                            selected = currentFeature == entry.feature,
-                                            onClick = { viewModel.selectFeature(entry.feature) },
-                                            icon = { Icon(entry.icon, contentDescription = entry.label) }
-                                        )
-                                    } else {
-                                        NavigationRailItem(
-                                            selected = currentFeature == entry.feature,
-                                            onClick = { viewModel.selectFeature(entry.feature) },
-                                            icon = { Icon(entry.icon, contentDescription = entry.label) },
-                                            label = { Text(entry.label) }
-                                        )
-                                    }
+                                    NavigationRailItem(
+                                        selected = currentFeature == entry.feature,
+                                        onClick = { viewModel.selectFeature(entry.feature) },
+                                        icon = { Icon(entry.icon, contentDescription = entry.label) },
+                                        label = { Text(entry.label) }
+                                    )
                                 }
                             }
                         }
