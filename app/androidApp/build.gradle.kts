@@ -8,7 +8,6 @@ plugins {
     alias(libs.plugins.googleGmsGoogleServices)
 }
 
-
 val keyPropertiesFile: File = rootProject.file(
     "app/androidApp/src/main/key.properties",
 )
@@ -127,7 +126,8 @@ android {
                 keyPassword = signingKeyDebugKeyPassword
             } else {
                 logger.warn(
-                    "Android debug signing keys are not configured; skipping dev signing.",
+                    "Android debug signing keys are not configured; " +
+                            "skipping dev signing.",
                 )
             }
         }
@@ -172,6 +172,7 @@ android {
             }
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
