@@ -2,6 +2,10 @@ name: Upload Android Build to App Tester
 
 on: [ push ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build Compose Multiplatform (Android)
@@ -57,4 +61,3 @@ jobs:
           groups: testers
           releaseNotes: "Android Application Build"
           file: app/androidApp/build/outputs/apk/release/androidApp-release.apk
-
