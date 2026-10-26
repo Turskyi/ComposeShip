@@ -83,6 +83,7 @@ dependencies {
     implementation(projects.app.shared)
     implementation(projects.featureCloudRunDeploy)
 
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity.compose)
 
     implementation(libs.compose.uiToolingPreview)

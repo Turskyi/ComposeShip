@@ -46,6 +46,9 @@ kotlin {
     }
     
     sourceSets {
+        androidMain.dependencies {
+            implementation(libs.androidx.appcompat)
+        }
         commonMain.dependencies {
             api(libs.multiplatform.settings)
             api(libs.multiplatform.settings.no.arg)

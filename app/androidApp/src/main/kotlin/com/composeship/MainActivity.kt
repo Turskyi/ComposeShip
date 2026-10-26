@@ -1,9 +1,9 @@
 package com.composeship
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
@@ -15,7 +15,7 @@ import com.composeship.feature.cloudrundeploy.ui.CloudRunDeployScreen
 import com.composeship.ui.password.PasswordGeneratorScreen
 import com.composeship.ui.base64.Base64EncoderScreen
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
