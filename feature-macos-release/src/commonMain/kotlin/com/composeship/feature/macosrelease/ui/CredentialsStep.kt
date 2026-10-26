@@ -62,6 +62,10 @@ fun CredentialsStep(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
+        AppStorePrerequisitesCard()
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         CredentialField(
             value = state.apiIssuerId,
             onValueChange = {

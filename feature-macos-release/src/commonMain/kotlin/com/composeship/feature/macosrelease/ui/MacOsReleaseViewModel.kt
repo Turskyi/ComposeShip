@@ -1287,6 +1287,12 @@ class MacOsReleaseViewModel(
                                 "LSApplicationCategoryType"
                             ) -> "Invalid Application Category."
 
+                            lastErrorLine.contains("No suitable application records", ignoreCase = true) ||
+                                    lastErrorLine.contains("application record", ignoreCase = true) ||
+                                    lastErrorLine.contains("90474") ||
+                                    lastErrorLine.contains("90206") ->
+                                "App record or Bundle ID not found on App Store Connect. Please ensure you have registered your Bundle ID at developer.apple.com and created the App record at appstoreconnect.apple.com."
+
                             lastErrorLine.isNotEmpty() -> lastErrorLine
                             else -> "Upload failed."
                         }
