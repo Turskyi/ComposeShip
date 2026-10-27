@@ -310,12 +310,35 @@ class MacOsReleaseViewModel(
     }
 
     private fun detectTasks(path: String) {
-        val possibleSubprojects =
-            listOf("", "composeApp", "app/desktopApp", "desktop")
+        val possibleSubprojects = mutableListOf<String>()
+
+        // 1. Check settings.gradle.kts / settings.gradle for included subprojects
+        val settingsFile = listOf("$path/settings.gradle.kts", "$path/settings.gradle")
+            .firstOrNull { fileSystemService.exists(it) }
+        if (settingsFile != null) {
+            val content = fileSystemService.readFile(settingsFile) ?: ""
+            val regex = Regex("""include\s*\(?\s*["']([^"']+)["']\s*\)?""")
+            regex.findAll(content).forEach { match ->
+                val proj = match.groupValues[1].removePrefix(":")
+                if (proj.isNotEmpty()) {
+                    possibleSubprojects.add(proj.replace(':', '/'))
+                }
+            }
+        }
+
+        // 2. Add standard known fallbacks
+        val known = listOf("", "composeApp", "app/desktopApp", "desktopApp", "desktop", "app/desktop", "macos")
+        for (k in known) {
+            if (!possibleSubprojects.contains(k)) {
+                possibleSubprojects.add(k)
+            }
+        }
+
         val foundTasks = mutableListOf<String>()
 
-        for (sub in possibleSubprojects) {
-            val prefix = if (sub.isEmpty()) ":" else ":$sub:"
+        for (sub in possibleSubprojects.distinct()) {
+            val taskSub = sub.trim('/').replace('/', ':')
+            val prefix = if (taskSub.isEmpty()) ":" else ":$taskSub:"
             val buildFilePath =
                 if (sub.isEmpty()) "$path/build.gradle.kts" else "$path/$sub/build.gradle.kts"
 
@@ -327,7 +350,14 @@ class MacOsReleaseViewModel(
                     )) &&
                             !content.contains("apply false")
 
-                if (isComposeApplied) {
+                val isDesktopApplication = isComposeApplied && (
+                    content.contains("application") ||
+                    content.contains("mainClass") ||
+                    content.contains("nativeDistributions") ||
+                    content.contains("TargetFormat")
+                )
+
+                if (isDesktopApplication) {
                     foundTasks.add("${prefix}packageReleasePkg")
                 }
             }
@@ -353,7 +383,8 @@ class MacOsReleaseViewModel(
     }
 
     fun onTaskSelected(task: String) {
-        _state.update { it.copy(selectedTask = task) }
+        val normalizedTask = task.trim().replace('/', ':')
+        _state.update { it.copy(selectedTask = normalizedTask) }
     }
 
     fun onCategorySelected(category: String) {
@@ -616,8 +647,13 @@ class MacOsReleaseViewModel(
 
                 // 2. Clean build (ensure no stale artifacts)
                 appendLog("Cleaning build artifacts...")
-                val cleanTask =
-                    _state.value.selectedTask.substringBeforeLast(":") + ":clean"
+                val rawTask = _state.value.selectedTask.trim().replace('/', ':')
+                val cleanTask = if (rawTask.contains(":")) {
+                    val sub = rawTask.substringBeforeLast(":")
+                    if (sub.isEmpty()) ":clean" else "$sub:clean"
+                } else {
+                    ":clean"
+                }
                 executeCommand(listOf("./gradlew", cleanTask), logCommand = true)
 
                 // 3. Build
@@ -716,7 +752,18 @@ class MacOsReleaseViewModel(
             return _state.value.customIconPath
         }
 
-        val iconPaths = listOf(
+        val selectedTask = _state.value.selectedTask
+        val taskSubDir = if (selectedTask.startsWith(":") && selectedTask.count { it == ':' } >= 2) {
+            selectedTask.substringAfter(":").substringBeforeLast(":").replace(':', '/')
+        } else null
+
+        val iconPaths = mutableListOf<String>()
+        if (taskSubDir != null) {
+            iconPaths.add("$root/$taskSubDir/src/main/resources/icon.png")
+            iconPaths.add("$root/$taskSubDir/src/desktopMain/resources/icon.png")
+            iconPaths.add("$root/$taskSubDir/src/desktopMain/icons/icon.png")
+        }
+        iconPaths.addAll(listOf(
             "$root/app/desktopApp/src/main/resources/icon.png",
             "$root/composeApp/src/desktopMain/icons/icon.png",
             "$root/composeApp/src/desktopMain/resources/icon.png",
@@ -726,9 +773,9 @@ class MacOsReleaseViewModel(
             "$root/composeApp/src/androidMain/res/mipmap-xxxhdpi/ic_launcher.webp",
             "$root/app/androidApp/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
             "$root/app/androidApp/src/main/res/mipmap-xxxhdpi/ic_launcher.webp"
-        )
+        ))
 
-        return iconPaths.firstOrNull {
+        return iconPaths.distinct().firstOrNull {
             fileSystemService.exists(it) && fileSystemService.length(it) > 0
         }
     }
@@ -855,7 +902,18 @@ class MacOsReleaseViewModel(
     }
 
     private fun findGeneratedIcons(root: String): String? {
-        val iconPaths = listOf(
+        val selectedTask = _state.value.selectedTask
+        val taskSubDir = if (selectedTask.startsWith(":") && selectedTask.count { it == ':' } >= 2) {
+            selectedTask.substringAfter(":").substringBeforeLast(":").replace(':', '/')
+        } else null
+
+        val iconPaths = mutableListOf<String>()
+        if (taskSubDir != null) {
+            iconPaths.add("$root/$taskSubDir/src/main/resources/icon.icns")
+            iconPaths.add("$root/$taskSubDir/src/desktopMain/resources/icon.icns")
+            iconPaths.add("$root/$taskSubDir/src/desktopMain/icons/icon.icns")
+        }
+        iconPaths.addAll(listOf(
             "$root/app/desktopApp/src/main/resources/icon.icns",
             "$root/composeApp/src/desktopMain/icons/icon.icns",
             "$root/composeApp/src/desktopMain/resources/icon.icns",
@@ -863,8 +921,8 @@ class MacOsReleaseViewModel(
             // Also check Android resource folders if we regenerated there
             "$root/composeApp/src/androidMain/res/mipmap-xxxhdpi/icon.icns",
             "$root/app/androidApp/src/main/res/mipmap-xxxhdpi/icon.icns"
-        )
-        return iconPaths.firstOrNull { fileSystemService.exists(it) }
+        ))
+        return iconPaths.distinct().firstOrNull { fileSystemService.exists(it) }
     }
 
     private suspend fun proceedToReleaseFlow() {
@@ -1377,13 +1435,23 @@ class MacOsReleaseViewModel(
     }
 
     private fun findAppBundle(root: String): String? {
-        val searchPaths = listOf(
+        val selectedTask = _state.value.selectedTask
+        val taskSubDir = if (selectedTask.startsWith(":") && selectedTask.count { it == ':' } >= 2) {
+            selectedTask.substringAfter(":").substringBeforeLast(":").replace(':', '/')
+        } else null
+
+        val searchPaths = mutableListOf<String>()
+        if (taskSubDir != null) {
+            searchPaths.add("/$taskSubDir/build/compose/binaries/main-release/app")
+        }
+        searchPaths.addAll(listOf(
             "/build/compose/binaries/main-release/app",
             "/composeApp/build/compose/binaries/main-release/app",
             "/app/desktopApp/build/compose/binaries/main-release/app",
             "/desktop/build/compose/binaries/main-release/app"
-        )
-        for (relPath in searchPaths) {
+        ))
+
+        for (relPath in searchPaths.distinct()) {
             val buildDir = "$root$relPath"
             if (fileSystemService.exists(buildDir)) {
                 val files = fileSystemService.listFiles(buildDir)
