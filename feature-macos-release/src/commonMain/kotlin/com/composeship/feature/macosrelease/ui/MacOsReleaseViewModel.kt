@@ -1189,31 +1189,27 @@ class MacOsReleaseViewModel(
         val baseEntitlementsPath = entitlementsCandidates.firstOrNull { fileSystemService.exists(it) } ?: entitlementsCandidates.first()
         var entitlementsPath = baseEntitlementsPath
 
-        if (provProfile != null && fileSystemService.exists(baseEntitlementsPath)) {
+        if (provProfile != null) {
             val profilePlist = "/tmp/composeship_profile.plist"
             val runtimeEntitlements = "/tmp/composeship_runtime_entitlements.plist"
             appendLog("Extracting provisioning profile entitlements for signing...")
 
             val script = "if [ -f \"$appPath/Contents/embedded.provisionprofile\" ]; then\n" +
                     "    security cms -D -i \"$appPath/Contents/embedded.provisionprofile\" > \"$profilePlist\"\n" +
-                    "    appId=\$(/usr/libexec/PlistBuddy -c \"Print :Entitlements:application-identifier\" \"$profilePlist\" 2>/dev/null)\n" +
-                    "    teamId=\$(/usr/libexec/PlistBuddy -c \"Print :Entitlements:com.apple.developer.team-identifier\" \"$profilePlist\" 2>/dev/null)\n" +
-                    "    if [ -n \"\$appId\" ]; then\n" +
-                    "        cp \"$baseEntitlementsPath\" \"$runtimeEntitlements\"\n" +
-                    "        /usr/libexec/PlistBuddy -c \"Add :com.apple.application-identifier string \$appId\" \"$runtimeEntitlements\" 2>/dev/null || \\\n" +
-                    "        /usr/libexec/PlistBuddy -c \"Set :com.apple.application-identifier \$appId\" \"$runtimeEntitlements\" 2>/dev/null\n" +
-                    "        if [ -n \"\$teamId\" ]; then\n" +
-                    "            /usr/libexec/PlistBuddy -c \"Add :com.apple.developer.team-identifier string \$teamId\" \"$runtimeEntitlements\" 2>/dev/null || \\\n" +
-                    "            /usr/libexec/PlistBuddy -c \"Set :com.apple.developer.team-identifier \$teamId\" \"$runtimeEntitlements\" 2>/dev/null\n" +
-                    "        fi\n" +
-                    "        echo \"Successfully injected application-identifier (\$appId) into entitlements.\"\n" +
-                    "    fi\n" +
+                    "    /usr/libexec/PlistBuddy -x -c \"Print :Entitlements\" \"$profilePlist\" > \"$runtimeEntitlements\"\n" +
+                    "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.cs.allow-jit bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
+                    "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.cs.allow-unsigned-executable-memory bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
+                    "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.cs.disable-library-validation bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
+                    "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.cs.allow-dyld-environment-variables bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
+                    "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.files.user-selected.read-write bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
+                    "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.app-sandbox bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
+                    "    echo \"Successfully generated XML entitlements from provisioning profile.\"\n" +
                     "fi"
 
             val exitCode = executeCommand(listOf("bash", "-c", script), logCommand = true)
             if (exitCode == 0 && fileSystemService.exists(runtimeEntitlements)) {
                 entitlementsPath = runtimeEntitlements
-                appendLog("Using runtime entitlements with matching application identifier: $runtimeEntitlements")
+                appendLog("Using XML profile entitlements with application-identifier.")
             }
         }
 
