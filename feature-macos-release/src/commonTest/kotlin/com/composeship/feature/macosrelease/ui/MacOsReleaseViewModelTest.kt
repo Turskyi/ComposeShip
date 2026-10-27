@@ -18,6 +18,7 @@ class MacOsReleaseViewModelTest {
     fun detectsTasksForNestedDesktopSubprojectWithoutIncludingFeatureModules() {
         val files = mapOf(
             "/root/gradlew" to "",
+            "/root/build.gradle.kts" to "plugins { alias(libs.plugins.composeMultiplatform) apply false }",
             "/root/settings.gradle.kts" to """
                 include(":app:androidApp")
                 include(":app:desktopApp")
@@ -54,7 +55,7 @@ class MacOsReleaseViewModelTest {
         viewModel.onProjectRootChanged("/root")
 
         val state = viewModel.state.value
-        assertTrue(state.isProjectValid)
+        assertTrue(state.isProjectValid, "Project should be valid but error was: ${state.projectValidationError}")
         assertEquals(
             listOf(":app:desktopApp:packageReleasePkg", ":app:desktopApp:packagePkg"),
             state.availableTasks
@@ -66,6 +67,7 @@ class MacOsReleaseViewModelTest {
     fun detectsTasksForSingleModuleComposeApp() {
         val files = mapOf(
             "/root/gradlew" to "",
+            "/root/build.gradle.kts" to "plugins { alias(libs.plugins.composeMultiplatform) }",
             "/root/settings.gradle.kts" to """
                 include(":composeApp")
             """.trimIndent(),
@@ -83,6 +85,7 @@ class MacOsReleaseViewModelTest {
         viewModel.onProjectRootChanged("/root")
 
         val state = viewModel.state.value
+        assertTrue(state.isProjectValid, "Project should be valid but error was: ${state.projectValidationError}")
         assertEquals(
             listOf(":composeApp:packageReleasePkg", ":composeApp:packagePkg"),
             state.availableTasks
@@ -113,8 +116,17 @@ class MacOsReleaseViewModelTest {
     ) : FileSystemService {
         override fun exists(path: String): Boolean = files.containsKey(path)
         override fun length(path: String): Long = files[path]?.length?.toLong() ?: 0L
-        override fun listFiles(path: String): List<String> =
-            files.keys.filter { it.startsWith(path) }
+        override fun listFiles(path: String): List<String> {
+            val normalizedPath = if (path.endsWith("/")) path else "$path/"
+            return files.keys
+                .filter { it.startsWith(normalizedPath) }
+                .map { relative ->
+                    val suffix = relative.removePrefix(normalizedPath)
+                    val firstSegment = suffix.substringBefore("/")
+                    normalizedPath + firstSegment
+                }
+                .distinct()
+        }
         override fun getUserHome(): String = "/user/home"
         override fun readFile(path: String): String? = files[path]
         override suspend fun pickDirectory(): String? = null

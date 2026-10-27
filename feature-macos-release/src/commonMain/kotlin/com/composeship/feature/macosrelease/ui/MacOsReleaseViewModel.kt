@@ -1082,10 +1082,38 @@ class MacOsReleaseViewModel(
         }
 
         val subproject = appPath.removePrefix(root).substringBefore("/build/")
-        val provProfile =
-            "$root$subproject/src/desktopMain/entitlements/app.provisionprofile"
+        val entitlementDirs = listOf(
+            "$root$subproject/src/desktopMain/entitlements",
+            "$root$subproject/src/main/entitlements"
+        )
+        val fixedCandidates = listOf(
+            "$root$subproject/src/desktopMain/entitlements/app.provisionprofile",
+            "$root$subproject/src/desktopMain/entitlements/embedded.provisionprofile",
+            "$root$subproject/src/main/entitlements/app.provisionprofile",
+            "$root$subproject/src/main/entitlements/embedded.provisionprofile"
+        )
 
-        if (fileSystemService.exists(provProfile)) {
+        var provProfile = fixedCandidates.firstOrNull { fileSystemService.exists(it) }
+
+        if (provProfile == null) {
+            for (dir in entitlementDirs) {
+                if (fileSystemService.exists(dir)) {
+                    try {
+                        val found = fileSystemService.listFiles(dir).firstOrNull {
+                            it.endsWith(".provisionprofile") || it.endsWith(".mobileprovision")
+                        }
+                        if (found != null) {
+                            provProfile = found
+                            break
+                        }
+                    } catch (e: Exception) {
+                        /* ignore */
+                    }
+                }
+            }
+        }
+
+        if (provProfile != null) {
             appendLog("Cleaning quarantine from source profile $provProfile...")
             executeCommand(
                 listOf(
@@ -1105,6 +1133,8 @@ class MacOsReleaseViewModel(
                 ),
                 logCommand = true
             )
+        } else {
+            appendLog("⚠️ WARNING: No provisioning profile found at candidate locations: $fixedCandidates or $entitlementDirs. TestFlight / App Store Connect submission requires embedded.provisionprofile in the main bundle.")
         }
 
         appendLog("Removing quarantine attributes from $appPath...")
@@ -1152,10 +1182,17 @@ class MacOsReleaseViewModel(
         )
 
         appendLog("Signing main executable...")
-        val entitlementsPath =
-            "$root$subproject/src/desktopMain/entitlements/entitlements.plist"
-        val childEntitlementsPath =
-            "$root$subproject/src/desktopMain/entitlements/child-entitlements.plist"
+        val entitlementsCandidates = listOf(
+            "$root$subproject/src/desktopMain/entitlements/entitlements.plist",
+            "$root$subproject/src/main/entitlements/entitlements.plist"
+        )
+        val entitlementsPath = entitlementsCandidates.firstOrNull { fileSystemService.exists(it) } ?: entitlementsCandidates.first()
+
+        val childEntitlementsCandidates = listOf(
+            "$root$subproject/src/desktopMain/entitlements/child-entitlements.plist",
+            "$root$subproject/src/main/entitlements/child-entitlements.plist"
+        )
+        val childEntitlementsPath = childEntitlementsCandidates.firstOrNull { fileSystemService.exists(it) } ?: childEntitlementsCandidates.first()
 
         val jspawnhelper =
             "$appPath/Contents/runtime/Contents/Home/lib/jspawnhelper"

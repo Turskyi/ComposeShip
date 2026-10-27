@@ -17,3 +17,7 @@ This file tracks gaps and ambiguities discovered in the reference docs (`AI_MACO
 ### 4. JVM Hardened Runtime & Sandbox
 - **Gap**: The reference doc lists several mandatory entitlements. If a user misses one, the app crashes on launch.
 - **Resolution**: The tool should provide a "Verify Entitlements" step that checks for the presence of mandatory JVM flags (`allow-jit`, `allow-unsigned-executable-memory`, etc.) before signing.
+
+### 5. Provisioning Profile Requirement for TestFlight / App Store Connect
+- **Gap**: TestFlight / App Store Connect requires an embedded provisioning profile (`embedded.provisionprofile`) in the main `.app` bundle. If missing, App Store Connect rejects TestFlight distribution with warning/error `90889`.
+- **Resolution**: Search across candidate locations (`src/desktopMain/entitlements/app.provisionprofile`, `src/desktopMain/entitlements/embedded.provisionprofile`, `src/main/entitlements/app.provisionprofile`, etc.) and log an explicit warning if no provisioning profile is found.
