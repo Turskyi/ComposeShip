@@ -1,7 +1,7 @@
 [versions]
 applicationId = "com.composeship"
-versionName = "0.0.3"
-versionCode = "3"
+versionName = "0.0.4"
+versionCode = "4"
 
 agp = "9.4.1"
 android-compileSdk = "37"
@@ -28,6 +28,7 @@ firebaseAnalytics = "24.0.0"
 
 [libraries]
 java-jwt = { module = "com.auth0:java-jwt", version = "4.6.2" }
+
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }

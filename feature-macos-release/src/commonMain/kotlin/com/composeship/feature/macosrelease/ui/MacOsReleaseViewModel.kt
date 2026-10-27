@@ -1190,8 +1190,8 @@ class MacOsReleaseViewModel(
         var entitlementsPath = baseEntitlementsPath
 
         if (provProfile != null && fileSystemService.exists(baseEntitlementsPath)) {
-            val profilePlist = "/tmp/composeship_profile_\${System.currentTimeMillis()}.plist"
-            val runtimeEntitlements = "/tmp/composeship_runtime_entitlements_\${System.currentTimeMillis()}.plist"
+            val profilePlist = "/tmp/composeship_profile.plist"
+            val runtimeEntitlements = "/tmp/composeship_runtime_entitlements.plist"
             appendLog("Extracting provisioning profile entitlements for signing...")
 
             val script = "if [ -f \"$appPath/Contents/embedded.provisionprofile\" ]; then\n" +
