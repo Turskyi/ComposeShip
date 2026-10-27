@@ -1186,7 +1186,36 @@ class MacOsReleaseViewModel(
             "$root$subproject/src/desktopMain/entitlements/entitlements.plist",
             "$root$subproject/src/main/entitlements/entitlements.plist"
         )
-        val entitlementsPath = entitlementsCandidates.firstOrNull { fileSystemService.exists(it) } ?: entitlementsCandidates.first()
+        val baseEntitlementsPath = entitlementsCandidates.firstOrNull { fileSystemService.exists(it) } ?: entitlementsCandidates.first()
+        var entitlementsPath = baseEntitlementsPath
+
+        if (provProfile != null && fileSystemService.exists(baseEntitlementsPath)) {
+            val profilePlist = "/tmp/composeship_profile_\${System.currentTimeMillis()}.plist"
+            val runtimeEntitlements = "/tmp/composeship_runtime_entitlements_\${System.currentTimeMillis()}.plist"
+            appendLog("Extracting provisioning profile entitlements for signing...")
+
+            val script = "if [ -f \"$appPath/Contents/embedded.provisionprofile\" ]; then\n" +
+                    "    security cms -D -i \"$appPath/Contents/embedded.provisionprofile\" > \"$profilePlist\"\n" +
+                    "    appId=\$(/usr/libexec/PlistBuddy -c \"Print :Entitlements:application-identifier\" \"$profilePlist\" 2>/dev/null)\n" +
+                    "    teamId=\$(/usr/libexec/PlistBuddy -c \"Print :Entitlements:com.apple.developer.team-identifier\" \"$profilePlist\" 2>/dev/null)\n" +
+                    "    if [ -n \"\$appId\" ]; then\n" +
+                    "        cp \"$baseEntitlementsPath\" \"$runtimeEntitlements\"\n" +
+                    "        /usr/libexec/PlistBuddy -c \"Add :com.apple.application-identifier string \$appId\" \"$runtimeEntitlements\" 2>/dev/null || \\\n" +
+                    "        /usr/libexec/PlistBuddy -c \"Set :com.apple.application-identifier \$appId\" \"$runtimeEntitlements\" 2>/dev/null\n" +
+                    "        if [ -n \"\$teamId\" ]; then\n" +
+                    "            /usr/libexec/PlistBuddy -c \"Add :com.apple.developer.team-identifier string \$teamId\" \"$runtimeEntitlements\" 2>/dev/null || \\\n" +
+                    "            /usr/libexec/PlistBuddy -c \"Set :com.apple.developer.team-identifier \$teamId\" \"$runtimeEntitlements\" 2>/dev/null\n" +
+                    "        fi\n" +
+                    "        echo \"Successfully injected application-identifier (\$appId) into entitlements.\"\n" +
+                    "    fi\n" +
+                    "fi"
+
+            val exitCode = executeCommand(listOf("bash", "-c", script), logCommand = true)
+            if (exitCode == 0 && fileSystemService.exists(runtimeEntitlements)) {
+                entitlementsPath = runtimeEntitlements
+                appendLog("Using runtime entitlements with matching application identifier: $runtimeEntitlements")
+            }
+        }
 
         val childEntitlementsCandidates = listOf(
             "$root$subproject/src/desktopMain/entitlements/child-entitlements.plist",

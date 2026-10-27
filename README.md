@@ -16,6 +16,7 @@ JVM), Server. It is designed as a suite of developer utility tools.
 Join our testing program and provide valuable feedback:
 
 - [Android App Tester Invite](https://appdistribution.firebase.dev/i/c32c55af9803d74d)
+- [iOS TestFlight Invite](https://testflight.apple.com/join/Bbw3q9Dx)
 
 ## Project Structure
 
