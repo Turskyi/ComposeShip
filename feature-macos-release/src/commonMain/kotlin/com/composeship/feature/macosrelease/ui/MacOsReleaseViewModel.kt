@@ -156,6 +156,17 @@ class MacOsReleaseViewModel(
             return
         }
 
+        val versionName = getVersionName(path)
+        if (versionName != null && isVersionInvalidForMacOs(versionName)) {
+            _state.update {
+                it.copy(
+                    isProjectValid = false,
+                    projectValidationError = "versionName ($versionName) in gradle/libs.versions.toml starts with 0. macOS release requires versionName to start with 1.x.x or higher in gradle/libs.versions.toml."
+                )
+            }
+            return
+        }
+
         _state.update {
             it.copy(
                 isProjectValid = true,
@@ -637,6 +648,19 @@ class MacOsReleaseViewModel(
                 }
 
                 val root = _state.value.projectRoot
+
+                val versionName = getVersionName(root)
+                if (versionName != null && isVersionInvalidForMacOs(versionName)) {
+                    val errorMsg = "versionName ($versionName) in gradle/libs.versions.toml starts with 0. macOS release requires versionName to start with 1.x.x or higher in gradle/libs.versions.toml."
+                    appendLog("Error: $errorMsg")
+                    _state.update {
+                        it.copy(
+                            isReleasing = false,
+                            releaseError = errorMsg
+                        )
+                    }
+                    return@launch
+                }
 
                 // 1. Icon Regeneration (MUST happen before build)
                 appendLog("Regenerating icons...")
@@ -1447,6 +1471,26 @@ class MacOsReleaseViewModel(
             if (matchNoQuotes != null) return matchNoQuotes.groupValues[1]
         }
         return null
+    }
+
+    private fun getVersionName(root: String): String? {
+        val libsVersionsFile = "$root/gradle/libs.versions.toml"
+        if (fileSystemService.exists(libsVersionsFile)) {
+            val content = fileSystemService.readFile(libsVersionsFile) ?: ""
+            val match = Regex("""versionName\s*=\s*["']([^"']+)["']""").find(content)
+            if (match != null) return match.groupValues[1]
+
+            val matchNoQuotes = Regex("""versionName\s*=\s*([^\s#]+)""").find(content)
+            if (matchNoQuotes != null) return matchNoQuotes.groupValues[1]
+        }
+        return null
+    }
+
+    private fun isVersionInvalidForMacOs(version: String): Boolean {
+        val cleanVersion = version.trim().removePrefix("v")
+        val majorPart = cleanVersion.split(".").firstOrNull()?.takeWhile { it.isDigit() } ?: return false
+        val majorInt = majorPart.toIntOrNull() ?: return false
+        return majorInt <= 0
     }
 
     private suspend fun getBundleId(appPath: String): String? {

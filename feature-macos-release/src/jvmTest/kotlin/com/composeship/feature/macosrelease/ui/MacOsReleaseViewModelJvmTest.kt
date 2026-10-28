@@ -23,7 +23,7 @@ class MacOsReleaseViewModelJvmTest {
             "/root/settings.gradle.kts" to "include(\":app:desktopApp\")",
             "/root/gradle/libs.versions.toml" to """
                 [versions]
-                versionName = "0.0.5"
+                versionName = "1.0.5"
                 versionCode = "5"
             """.trimIndent(),
             "/root/app/desktopApp/build.gradle.kts" to """

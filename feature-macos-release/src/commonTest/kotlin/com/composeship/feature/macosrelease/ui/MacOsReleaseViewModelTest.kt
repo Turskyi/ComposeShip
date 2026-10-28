@@ -101,6 +101,27 @@ class MacOsReleaseViewModelTest {
         assertEquals(":app:desktopApp:packageReleasePkg", viewModel.state.value.selectedTask)
     }
 
+    @Test
+    fun projectValidationFailsWhenVersionNameStartsFromZero() {
+        val files = mapOf(
+            "/root/gradlew" to "",
+            "/root/build.gradle.kts" to "plugins { alias(libs.plugins.composeMultiplatform) }",
+            "/root/settings.gradle.kts" to """include(":composeApp")""".trimIndent(),
+            "/root/gradle/libs.versions.toml" to """
+                [versions]
+                versionName = "0.0.6"
+                versionCode = "6"
+            """.trimIndent()
+        )
+
+        val viewModel = createViewModel(files)
+        viewModel.onProjectRootChanged("/root")
+
+        val state = viewModel.state.value
+        assertTrue(!state.isProjectValid, "Project should be invalid when versionName starts with 0")
+        assertTrue(state.projectValidationError?.contains("starts with 0") == true, "Error message should mention versionName starting with 0: ${state.projectValidationError}")
+    }
+
     private fun createViewModel(files: Map<String, String>): MacOsReleaseViewModel {
         return MacOsReleaseViewModel(
             processService = FakeProcessService(),
