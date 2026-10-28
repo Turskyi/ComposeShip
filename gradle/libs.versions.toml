@@ -1,9 +1,10 @@
 [versions]
 applicationId = "com.composeship"
-versionName = "0.0.5"
-versionCode = "5"
+dockName = "ComposeShip"
+versionName = "0.0.6"
+versionCode = "6"
 
-agp = "9.4.1"
+agp = "9.5.0"
 android-compileSdk = "37"
 android-minSdk = "24"
 android-targetSdk = "37"
