@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.composeship.feature.macosrelease.domain.service.AppStoreConnectService
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -21,7 +22,7 @@ import java.util.Date
 
 class DesktopAppStoreConnectService : AppStoreConnectService {
     
-    private val client = HttpClient {
+    private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
