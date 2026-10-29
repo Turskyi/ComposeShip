@@ -23,6 +23,16 @@ compose.desktop {
     application {
         mainClass = "com.composeship.MainKt"
 
+        buildTypes {
+            release {
+                proguard {
+                    configurationFiles.from(
+                        project.file("proguard-desktop-rules.pro"),
+                    )
+                }
+            }
+        }
+
         nativeDistributions {
             targetFormats(
                 TargetFormat.Dmg,
@@ -32,6 +42,23 @@ compose.desktop {
             )
             packageName = libs.versions.dockName.get()
             packageVersion = libs.versions.versionName.get()
+
+            macOS {
+                iconFile.set(
+                    project.file(
+                        "src/main/resources/icon.icns",
+                    )
+                )
+                bundleID = libs.versions.applicationId.get()
+                dockName = libs.versions.dockName.get()
+                appStore = false
+                infoPlist {
+                    extraKeysRawXml =
+                        "<key>ITSAppUsesNonExemptEncryption</key><false/>" +
+                                "<key>LSApplicationCategoryType</key>" +
+                                "<string>public.app-category.developer-tools</string>"
+                }
+            }
         }
     }
 }
