@@ -1223,8 +1223,10 @@ class MacOsReleaseViewModel(
                     "    /usr/libexec/PlistBuddy -x -c \"Print :Entitlements\" \"$profilePlist\" > \"$runtimeEntitlements\"\n" +
                     "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.cs.allow-jit bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
                     "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.cs.allow-unsigned-executable-memory bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
+                    "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.cs.disable-executable-page-protection bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
                     "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.cs.disable-library-validation bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
                     "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.cs.allow-dyld-environment-variables bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
+                    "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.network.client bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
                     "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.files.user-selected.read-write bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
                     "    /usr/libexec/PlistBuddy -c \"Add :com.apple.security.app-sandbox bool true\" \"$runtimeEntitlements\" 2>/dev/null || true\n" +
                     "    echo \"Successfully generated XML entitlements from provisioning profile.\"\n" +
