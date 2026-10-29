@@ -21,3 +21,9 @@ This file tracks gaps and ambiguities discovered in the reference docs (`AI_MACO
 ### 5. Provisioning Profile Requirement for TestFlight / App Store Connect
 - **Gap**: TestFlight / App Store Connect requires an embedded provisioning profile (`embedded.provisionprofile`) in the main `.app` bundle. If missing, App Store Connect rejects TestFlight distribution with warning/error `90889`.
 - **Resolution**: Search across candidate locations (`src/desktopMain/entitlements/app.provisionprofile`, `src/desktopMain/entitlements/embedded.provisionprofile`, `src/main/entitlements/app.provisionprofile`, etc.) and log an explicit warning if no provisioning profile is found.
+
+### 6. Ktor ServiceLoader Reflection Trap in ProGuard Release Builds
+- **Gap**: Parameterless `HttpClient { ... }` on JVM uses Java `ServiceLoader` reflection to discover available HTTP client engine containers. In ProGuard release builds (`packageReleasePkg`), ProGuard obfuscates or strips `META-INF/services/io.ktor.client.HttpClientEngineContainer` and engine containers, causing `ServiceConfigurationError: Provider CIOEngineContainer not found` during `main()` execution and an immediate silent JVM launch failure (`Failed to launch JVM`).
+- **Resolution**:
+  1. Always explicitly specify the engine constructor on JVM, e.g., `HttpClient(CIO) { ... }`, to bypass runtime `ServiceLoader` reflection entirely.
+  2. Maintain explicit ProGuard keep rules in `proguard-desktop-rules.pro` for `io.ktor.client.engine.cio.**` and `io.ktor.client.engine.**`.
