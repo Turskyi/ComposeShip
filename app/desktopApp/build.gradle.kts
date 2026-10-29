@@ -52,6 +52,9 @@ compose.desktop {
                 bundleID = libs.versions.applicationId.get()
                 dockName = libs.versions.dockName.get()
                 appStore = false
+                signing {
+                    sign.set(false)
+                }
                 infoPlist {
                     extraKeysRawXml =
                         "<key>ITSAppUsesNonExemptEncryption</key><false/>" +
