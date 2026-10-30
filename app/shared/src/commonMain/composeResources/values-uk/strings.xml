@@ -26,4 +26,10 @@
     <string name="password_copy_one">Копіювати пароль</string>
     <string name="password_generated">Скопійовано до буфера обміну</string>
     <string name="password_validation">Перевірте довжину, кількість і вибрані типи символів.</string>
+    <string name="support_title">Підтримка</string>
+    <string name="support_description">Потрібна допомога з ComposeShip? Ми тут, щоб допомогти.</string>
+    <string name="support_email_title">Підтримка електронною поштою</string>
+    <string name="support_web_title">Вебпідтримка</string>
+    <string name="support_telegram_title">Спільнота в Telegram</string>
+    <string name="support_back_button">Назад на головну</string>
 </resources>

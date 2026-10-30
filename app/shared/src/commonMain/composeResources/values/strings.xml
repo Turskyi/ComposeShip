@@ -26,4 +26,10 @@
     <string name="password_copy_one">Copy password</string>
     <string name="password_generated">Copied to clipboard</string>
     <string name="password_validation">Check the length, quantity, and selected character types.</string>
+    <string name="support_title">Support</string>
+    <string name="support_description">Need help with ComposeShip? We're here for you.</string>
+    <string name="support_email_title">Email Support</string>
+    <string name="support_web_title">Web Support</string>
+    <string name="support_telegram_title">Telegram Community</string>
+    <string name="support_back_button">Back to Home</string>
 </resources>

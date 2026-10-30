@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CloudUpload
@@ -80,6 +81,7 @@ import composeship.core.generated.resources.theme_system
 import com.composeship.app.shared.generated.resources.Res as SharedRes
 import com.composeship.app.shared.generated.resources.base64_title
 import com.composeship.app.shared.generated.resources.password_generator_title
+import com.composeship.app.shared.generated.resources.support_title
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
@@ -155,6 +157,12 @@ fun MainScaffold(
                             },
                             title = { AnimatedAppName() },
                             actions = {
+                                IconButton(onClick = { viewModel.toggleSupport() }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                                        contentDescription = stringResource(SharedRes.string.support_title)
+                                    )
+                                }
                                 LanguageSwitcher(
                                     currentLanguage = selectedLanguageCode,
                                     onLanguageSelected = { viewModel.setLanguage(it) }

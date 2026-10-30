@@ -16,6 +16,7 @@ import com.composeship.core.domain.model.Feature
 import com.composeship.core.domain.rememberAppLocale
 import com.composeship.ui.MainScaffold
 import com.composeship.ui.onboarding.OnboardingScreen
+import com.composeship.ui.web.SupportPage
 
 @Composable
 fun App(
@@ -25,6 +26,7 @@ fun App(
     val appLocale = rememberAppLocale()
     val mainViewModel = remember(appLocale) { appContainer.createMainViewModel(appLocale) }
     val showOnboarding by mainViewModel.showOnboarding.collectAsStateWithLifecycle()
+    val showSupport by mainViewModel.showSupport.collectAsStateWithLifecycle()
     val selectedLanguageCode by mainViewModel.selectedLanguageCode.collectAsStateWithLifecycle()
     val currentFeature by mainViewModel.currentFeature.collectAsStateWithLifecycle()
 
@@ -32,6 +34,8 @@ fun App(
         MainScaffold(viewModel = mainViewModel, showOnboarding = showOnboarding) { modifier ->
             if (showOnboarding) {
                 OnboardingScreen(onDismiss = { mainViewModel.dismissOnboarding() })
+            } else if (showSupport) {
+                SupportPage(modifier)
             } else {
                 AnimatedContent(
                     targetState = currentFeature,

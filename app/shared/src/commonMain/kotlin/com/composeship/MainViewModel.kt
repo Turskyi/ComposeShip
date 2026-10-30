@@ -28,6 +28,9 @@ class MainViewModel(
     private val _showOnboarding = MutableStateFlow(settingsRepository.shouldShowOnboarding())
     val showOnboarding: StateFlow<Boolean> = _showOnboarding.asStateFlow()
 
+    private val _showSupport = MutableStateFlow(false)
+    val showSupport: StateFlow<Boolean> = _showSupport.asStateFlow()
+
     private val _currentFeature = MutableStateFlow(
         if (getPlatform().isMac) Feature.MACOS_RELEASE else Feature.CLOUD_RUN_DEPLOY
     )
@@ -50,7 +53,20 @@ class MainViewModel(
         _showOnboarding.value = false
     }
 
+    fun showSupportPage() {
+        _showSupport.value = true
+    }
+
+    fun hideSupportPage() {
+        _showSupport.value = false
+    }
+
+    fun toggleSupport() {
+        _showSupport.value = !_showSupport.value
+    }
+
     fun selectFeature(feature: Feature) {
+        _showSupport.value = false
         _currentFeature.value = feature
     }
 }
