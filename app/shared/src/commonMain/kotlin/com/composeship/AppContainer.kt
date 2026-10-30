@@ -14,14 +14,16 @@ class AppContainer {
     fun createMainViewModel(
         appLocale: AppLocale,
         initialShowSupport: Boolean = false,
-        initialShowPrivacy: Boolean = false
+        initialShowPrivacy: Boolean = false,
+        initialShowLanding: Boolean = false
     ): MainViewModel {
         return MainViewModel(
             themeRepository = themeRepository,
             settingsRepository = settingsRepository,
             appLocale = appLocale,
             initialShowSupport = initialShowSupport,
-            initialShowPrivacy = initialShowPrivacy
+            initialShowPrivacy = initialShowPrivacy,
+            initialShowLanding = initialShowLanding
         )
     }
 }

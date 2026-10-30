@@ -20,6 +20,7 @@ import com.composeship.core.domain.platform.getPlatform
 import com.composeship.core.domain.rememberAppLocale
 import com.composeship.ui.MainScaffold
 import com.composeship.ui.onboarding.OnboardingScreen
+import com.composeship.ui.web.LandingPage
 import com.composeship.ui.web.PrivacyPage
 import com.composeship.ui.web.SupportPage
 
@@ -32,21 +33,24 @@ fun App(
     val initialPath = remember { platform.initialPath?.trim('/')?.lowercase() }
     val initialSupport = remember { initialPath == "support" }
     val initialPrivacy = remember { initialPath == "privacy" || initialPath == "privacypolicy" }
+    val initialLanding = remember { platform.type == PlatformType.WEB && initialPath == "landing" }
     val appLocale = rememberAppLocale()
-    val mainViewModel = remember(appLocale, initialSupport, initialPrivacy) {
-        appContainer.createMainViewModel(appLocale, initialSupport, initialPrivacy)
+    val mainViewModel = remember(appLocale, initialSupport, initialPrivacy, initialLanding) {
+        appContainer.createMainViewModel(appLocale, initialSupport, initialPrivacy, initialLanding)
     }
     val showOnboarding by mainViewModel.showOnboarding.collectAsStateWithLifecycle()
     val showSupport by mainViewModel.showSupport.collectAsStateWithLifecycle()
     val showPrivacy by mainViewModel.showPrivacy.collectAsStateWithLifecycle()
+    val showLanding by mainViewModel.showLanding.collectAsStateWithLifecycle()
     val selectedLanguageCode by mainViewModel.selectedLanguageCode.collectAsStateWithLifecycle()
     val currentFeature by mainViewModel.currentFeature.collectAsStateWithLifecycle()
 
-    LaunchedEffect(showSupport, showPrivacy) {
+    LaunchedEffect(showSupport, showPrivacy, showLanding) {
         if (platform.type == PlatformType.WEB) {
             val targetPath = when {
                 showSupport -> "/support"
                 showPrivacy -> "/privacy"
+                showLanding -> "/landing"
                 else -> "/"
             }
             platform.updateUrl(targetPath)
@@ -60,7 +64,8 @@ fun App(
                 when (trimmed) {
                     "support" -> mainViewModel.showSupportPage()
                     "privacy", "privacypolicy" -> mainViewModel.showPrivacyPage()
-                    else -> mainViewModel.hideOverlayPages()
+                    "landing" -> mainViewModel.showLandingPage()
+                    else -> mainViewModel.hideLandingPage()
                 }
             }
         }
@@ -68,14 +73,17 @@ fun App(
     }
 
     key(selectedLanguageCode) {
-        MainScaffold(viewModel = mainViewModel, showOnboarding = showOnboarding) { modifier ->
-            if (showSupport) {
-                SupportPage(modifier)
-            } else if (showPrivacy) {
-                PrivacyPage(modifier)
-            } else if (showOnboarding) {
-                OnboardingScreen(onDismiss = { mainViewModel.dismissOnboarding() })
-            } else {
+        when {
+            showSupport -> SupportPage()
+            showPrivacy -> PrivacyPage()
+            showLanding -> LandingPage(
+                onEnterApp = { mainViewModel.hideLandingPage() },
+                onNavigateToSupport = { mainViewModel.showSupportPage() },
+                onNavigateToPrivacy = { mainViewModel.showPrivacyPage() },
+                isWeb = platform.type == PlatformType.WEB
+            )
+            showOnboarding -> OnboardingScreen(onDismiss = { mainViewModel.dismissOnboarding() })
+            else -> MainScaffold(viewModel = mainViewModel, showOnboarding = showOnboarding) { modifier ->
                 AnimatedContent(
                     targetState = currentFeature,
                     transitionSpec = {

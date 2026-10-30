@@ -3,6 +3,7 @@ package com.composeship.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.Laptop
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.DropdownMenu
@@ -17,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.composeship.MainViewModel
 import com.composeship.app.shared.generated.resources.Res as SharedRes
+import com.composeship.app.shared.generated.resources.home_title
 import com.composeship.app.shared.generated.resources.more_options_description
 import com.composeship.app.shared.generated.resources.privacy_title
 import com.composeship.app.shared.generated.resources.support_title
@@ -40,6 +42,19 @@ fun MoreOptionsMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(SharedRes.string.home_title)) },
+                onClick = {
+                    viewModel.showLandingPage()
+                    expanded = false
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Laptop,
+                        contentDescription = null
+                    )
+                }
+            )
             DropdownMenuItem(
                 text = { Text(stringResource(SharedRes.string.support_title)) },
                 onClick = {

@@ -44,4 +44,5 @@
     <string name="privacy_contact_title">Контакти</string>
     <string name="privacy_contact_desc">Якщо у вас є запитання, зв’яжіться з нами за адресою dmytro@turskyi.com</string>
     <string name="more_options_description">Додаткові опції</string>
+    <string name="home_title">Головна</string>
 </resources>

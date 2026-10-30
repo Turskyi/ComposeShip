@@ -18,7 +18,8 @@ class MainViewModel(
     private val settingsRepository: SettingsRepository,
     private val appLocale: AppLocale,
     initialShowSupport: Boolean = false,
-    initialShowPrivacy: Boolean = false
+    initialShowPrivacy: Boolean = false,
+    initialShowLanding: Boolean = false
 ) : ViewModel() {
     val themeMode: StateFlow<ThemeMode> = themeRepository.themeMode
     
@@ -35,6 +36,9 @@ class MainViewModel(
 
     private val _showPrivacy = MutableStateFlow(initialShowPrivacy)
     val showPrivacy: StateFlow<Boolean> = _showPrivacy.asStateFlow()
+
+    private val _showLanding = MutableStateFlow(initialShowLanding)
+    val showLanding: StateFlow<Boolean> = _showLanding.asStateFlow()
 
     private val _currentFeature = MutableStateFlow(
         if (getPlatform().isMac) Feature.MACOS_RELEASE else Feature.CLOUD_RUN_DEPLOY
@@ -59,6 +63,7 @@ class MainViewModel(
     }
 
     fun showSupportPage() {
+        _showLanding.value = false
         _showPrivacy.value = false
         _showSupport.value = true
     }
@@ -68,6 +73,7 @@ class MainViewModel(
     }
 
     fun showPrivacyPage() {
+        _showLanding.value = false
         _showSupport.value = false
         _showPrivacy.value = true
     }
@@ -76,22 +82,36 @@ class MainViewModel(
         _showPrivacy.value = false
     }
 
+    fun showLandingPage() {
+        _showSupport.value = false
+        _showPrivacy.value = false
+        _showLanding.value = true
+    }
+
+    fun hideLandingPage() {
+        _showLanding.value = false
+    }
+
     fun hideOverlayPages() {
         _showSupport.value = false
         _showPrivacy.value = false
+        _showLanding.value = false
     }
 
     fun toggleSupport() {
+        _showLanding.value = false
         _showPrivacy.value = false
         _showSupport.value = !_showSupport.value
     }
 
     fun togglePrivacy() {
+        _showLanding.value = false
         _showSupport.value = false
         _showPrivacy.value = !_showPrivacy.value
     }
 
     fun selectFeature(feature: Feature) {
+        _showLanding.value = false
         _showSupport.value = false
         _showPrivacy.value = false
         _currentFeature.value = feature
