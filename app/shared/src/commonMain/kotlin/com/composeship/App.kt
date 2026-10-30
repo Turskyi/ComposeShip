@@ -74,8 +74,8 @@ fun App(
 
     key(selectedLanguageCode) {
         when {
-            showSupport -> SupportPage()
-            showPrivacy -> PrivacyPage()
+            showSupport -> SupportPage(onHomeClick = { mainViewModel.hideSupportPage() })
+            showPrivacy -> PrivacyPage(onHomeClick = { mainViewModel.hidePrivacyPage() })
             showLanding -> LandingPage(
                 onEnterApp = { mainViewModel.hideLandingPage() },
                 onNavigateToSupport = { mainViewModel.showSupportPage() },

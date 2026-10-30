@@ -4,13 +4,19 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,7 +41,10 @@ import com.composeship.core.ui.TechnicalGridBackground
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun PrivacyPage(modifier: Modifier = Modifier) {
+fun PrivacyPage(
+    modifier: Modifier = Modifier,
+    onHomeClick: () -> Unit = {}
+) {
     Box(modifier = modifier.fillMaxSize()) {
         TechnicalGridBackground()
 
@@ -49,67 +58,102 @@ fun PrivacyPage(modifier: Modifier = Modifier) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = stringResource(SharedRes.string.privacy_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                SelectionContainer {
-                    Card(modifier = Modifier.fillMaxWidth(0.9f)) {
-                        Column(
-                            modifier = Modifier.padding(24.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                // Top header row with home button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        onClick = onHomeClick,
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = stringResource(SharedRes.string.privacy_overview_title),
-                                style = MaterialTheme.typography.titleMedium
+                            Icon(
+                                imageVector = Icons.Default.RocketLaunch,
+                                contentDescription = "Home",
+                                modifier = Modifier.size(24.dp)
                             )
-                            Text(
-                                text = stringResource(SharedRes.string.privacy_overview_desc),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                        }
+                    }
+                }
 
-                            Text(
-                                text = stringResource(SharedRes.string.privacy_data_collection_title),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = stringResource(SharedRes.string.privacy_data_collection_desc),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                // Scrollable content
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = stringResource(SharedRes.string.privacy_title),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
-                            Text(
-                                text = stringResource(SharedRes.string.privacy_local_storage_title),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = stringResource(SharedRes.string.privacy_local_storage_desc),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                    SelectionContainer {
+                        Card(modifier = Modifier.fillMaxWidth(0.9f)) {
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(SharedRes.string.privacy_overview_title),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = stringResource(SharedRes.string.privacy_overview_desc),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
 
-                            Text(
-                                text = stringResource(SharedRes.string.privacy_third_party_title),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = stringResource(SharedRes.string.privacy_third_party_desc),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                                Text(
+                                    text = stringResource(SharedRes.string.privacy_data_collection_title),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = stringResource(SharedRes.string.privacy_data_collection_desc),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
 
-                            Text(
-                                text = stringResource(SharedRes.string.privacy_contact_title),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = stringResource(SharedRes.string.privacy_contact_desc),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                                Text(
+                                    text = stringResource(SharedRes.string.privacy_local_storage_title),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = stringResource(SharedRes.string.privacy_local_storage_desc),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+
+                                Text(
+                                    text = stringResource(SharedRes.string.privacy_third_party_title),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = stringResource(SharedRes.string.privacy_third_party_desc),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+
+                                Text(
+                                    text = stringResource(SharedRes.string.privacy_contact_title),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = stringResource(SharedRes.string.privacy_contact_desc),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
                         }
                     }
                 }
