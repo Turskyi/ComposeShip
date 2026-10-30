@@ -8,5 +8,7 @@
 	<string>ComposeShip</string>
 	<key>CFBundleName</key>
 	<string>ComposeShip</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
