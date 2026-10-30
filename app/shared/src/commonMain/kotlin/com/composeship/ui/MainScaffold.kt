@@ -1,34 +1,18 @@
 package com.composeship.ui
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.DataObject
-import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Laptop
-import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,48 +24,31 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composeship.MainViewModel
+import com.composeship.app.shared.generated.resources.Res as SharedRes
+import com.composeship.app.shared.generated.resources.base64_title
+import com.composeship.app.shared.generated.resources.password_generator_title
 import com.composeship.core.domain.model.Feature
 import com.composeship.core.domain.platform.PlatformType
 import com.composeship.core.domain.platform.getPlatform
 import com.composeship.core.theme.ComposeShipTheme
-import com.composeship.core.theme.ThemeMode
 import composeship.core.generated.resources.Res
-import composeship.core.generated.resources.app_name
 import composeship.core.generated.resources.feature_cloud_run
 import composeship.core.generated.resources.feature_firebase
 import composeship.core.generated.resources.feature_macos
 import composeship.core.generated.resources.feature_wear
-import composeship.core.generated.resources.language_en
-import composeship.core.generated.resources.language_system
-import composeship.core.generated.resources.language_uk
 import composeship.core.generated.resources.open_navigation_menu
-import composeship.core.generated.resources.switch_language
-import composeship.core.generated.resources.switch_theme
-import composeship.core.generated.resources.theme_dark
-import composeship.core.generated.resources.theme_light
-import composeship.core.generated.resources.theme_system
-import com.composeship.app.shared.generated.resources.Res as SharedRes
-import com.composeship.app.shared.generated.resources.base64_title
-import com.composeship.app.shared.generated.resources.password_generator_title
-import com.composeship.app.shared.generated.resources.support_title
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
@@ -157,12 +124,6 @@ fun MainScaffold(
                             },
                             title = { AnimatedAppName() },
                             actions = {
-                                IconButton(onClick = { viewModel.toggleSupport() }) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.HelpOutline,
-                                        contentDescription = stringResource(SharedRes.string.support_title)
-                                    )
-                                }
                                 LanguageSwitcher(
                                     currentLanguage = selectedLanguageCode,
                                     onLanguageSelected = { viewModel.setLanguage(it) }
@@ -171,6 +132,7 @@ fun MainScaffold(
                                     currentMode = themeMode,
                                     onModeSelected = { viewModel.setThemeMode(it) }
                                 )
+                                MoreOptionsMenu(viewModel = viewModel)
                             }
                         )
                     }
@@ -216,136 +178,3 @@ private data class NavigationEntry(
     val icon: ImageVector,
     val label: String
 )
-
-@Composable
-private fun AnimatedAppName() {
-    val transition = rememberInfiniteTransition(label = "appNameGradient")
-    val gradientOffset by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 5000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "appNameGradientOffset"
-    )
-    val brush = Brush.linearGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.tertiary,
-            MaterialTheme.colorScheme.primary
-        ),
-        start = Offset(1000f * gradientOffset, 0f),
-        end = Offset(1000f * (gradientOffset + 1f), 100f)
-    )
-
-    Text(
-        text = stringResource(Res.string.app_name),
-        style = MaterialTheme.typography.titleLarge.copy(brush = brush)
-    )
-}
-
-@Composable
-private fun LanguageSwitcher(
-    currentLanguage: String?,
-    onLanguageSelected: (String?) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val languages = listOf(
-        null to stringResource(Res.string.language_system),
-        "en" to stringResource(Res.string.language_en),
-        "uk" to stringResource(Res.string.language_uk)
-    )
-
-    Box {
-        TextButton(onClick = { expanded = true }) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Language,
-                    contentDescription = stringResource(Res.string.switch_language)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(currentLanguage?.uppercase() ?: "SYS")
-            }
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            languages.forEach { (code, label) ->
-                DropdownMenuItem(
-                    text = { Text(label) },
-                    onClick = {
-                        onLanguageSelected(code)
-                        expanded = false
-                    },
-                    trailingIcon = {
-                        if (currentLanguage == code) {
-                            Icon(Icons.Default.Check, contentDescription = "Selected")
-                        }
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ThemeSwitcher(
-    currentMode: ThemeMode,
-    onModeSelected: (ThemeMode) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box {
-        IconButton(onClick = { expanded = true }) {
-            Icon(
-                imageVector = when (currentMode) {
-                    ThemeMode.LIGHT -> Icons.Default.LightMode
-                    ThemeMode.DARK -> Icons.Default.DarkMode
-                    ThemeMode.SYSTEM -> Icons.Default.Contrast
-                },
-                contentDescription = stringResource(Res.string.switch_theme)
-            )
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            ThemeMode.entries.forEach { mode ->
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            when (mode) {
-                                ThemeMode.LIGHT -> stringResource(Res.string.theme_light)
-                                ThemeMode.DARK -> stringResource(Res.string.theme_dark)
-                                ThemeMode.SYSTEM -> stringResource(Res.string.theme_system)
-                            }
-                        )
-                    },
-                    onClick = {
-                        onModeSelected(mode)
-                        expanded = false
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = when (mode) {
-                                ThemeMode.LIGHT -> Icons.Default.LightMode
-                                ThemeMode.DARK -> Icons.Default.DarkMode
-                                ThemeMode.SYSTEM -> Icons.Default.Contrast
-                            },
-                            contentDescription = null
-                        )
-                    },
-                    trailingIcon = {
-                        if (currentMode == mode) {
-                            Icon(Icons.Default.Check, contentDescription = "Selected")
-                        }
-                    }
-                )
-            }
-        }
-    }
-}

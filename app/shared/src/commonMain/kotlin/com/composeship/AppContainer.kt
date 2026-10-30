@@ -11,7 +11,17 @@ class AppContainer {
     val themeRepository: ThemeRepository = ThemeRepository(settings)
     val settingsRepository: SettingsRepository = SettingsRepositoryImpl(settings)
 
-    fun createMainViewModel(appLocale: AppLocale, initialShowSupport: Boolean = false): MainViewModel {
-        return MainViewModel(themeRepository, settingsRepository, appLocale, initialShowSupport)
+    fun createMainViewModel(
+        appLocale: AppLocale,
+        initialShowSupport: Boolean = false,
+        initialShowPrivacy: Boolean = false
+    ): MainViewModel {
+        return MainViewModel(
+            themeRepository = themeRepository,
+            settingsRepository = settingsRepository,
+            appLocale = appLocale,
+            initialShowSupport = initialShowSupport,
+            initialShowPrivacy = initialShowPrivacy
+        )
     }
 }

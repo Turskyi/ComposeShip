@@ -32,4 +32,16 @@
     <string name="support_web_title">Вебпідтримка</string>
     <string name="support_telegram_title">Спільнота в Telegram</string>
     <string name="support_back_button">Назад на головну</string>
+    <string name="privacy_title">Політика конфіденційності</string>
+    <string name="privacy_overview_title">Огляд</string>
+    <string name="privacy_overview_desc">ComposeShip прагне захищати вашу конфіденційність. Ця політика пояснює, як ми обробляємо ваші дані.</string>
+    <string name="privacy_data_collection_title">Збір даних</string>
+    <string name="privacy_data_collection_desc">• У Web та Android: ми використовуємо Firebase Analytics для збору анонімних даних про використання, щоб покращити додаток.\n• У iOS та macOS: аналітика не збирається.\n• Особисті дані: ми не збираємо й не зберігаємо жодної персональної інформації на наших серверах.</string>
+    <string name="privacy_local_storage_title">Локальне сховище</string>
+    <string name="privacy_local_storage_desc">• Ми використовуємо локальне сховище (Shared Preferences / Multiplatform Settings) для збереження ваших налаштувань і стану додатку.\n• У macOS чутливі дані (такі як ключі API App Store Connect) надійно зберігаються в системному Keychain.</string>
+    <string name="privacy_third_party_title">Сторонні сервіси</string>
+    <string name="privacy_third_party_desc">• Firebase (Google Inc.): використовується для аналітики на окремих платформах.\n• Сервіси Apple: інструмент випуску macOS взаємодіє безпосередньо з серверами Apple для підпису та нотаризації.</string>
+    <string name="privacy_contact_title">Контакти</string>
+    <string name="privacy_contact_desc">Якщо у вас є запитання, зв’яжіться з нами за адресою dmytro@turskyi.com</string>
+    <string name="more_options_description">Додаткові опції</string>
 </resources>

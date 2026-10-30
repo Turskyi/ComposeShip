@@ -17,7 +17,8 @@ class MainViewModel(
     private val themeRepository: ThemeRepository,
     private val settingsRepository: SettingsRepository,
     private val appLocale: AppLocale,
-    initialShowSupport: Boolean = false
+    initialShowSupport: Boolean = false,
+    initialShowPrivacy: Boolean = false
 ) : ViewModel() {
     val themeMode: StateFlow<ThemeMode> = themeRepository.themeMode
     
@@ -31,6 +32,9 @@ class MainViewModel(
 
     private val _showSupport = MutableStateFlow(initialShowSupport)
     val showSupport: StateFlow<Boolean> = _showSupport.asStateFlow()
+
+    private val _showPrivacy = MutableStateFlow(initialShowPrivacy)
+    val showPrivacy: StateFlow<Boolean> = _showPrivacy.asStateFlow()
 
     private val _currentFeature = MutableStateFlow(
         if (getPlatform().isMac) Feature.MACOS_RELEASE else Feature.CLOUD_RUN_DEPLOY
@@ -55,6 +59,7 @@ class MainViewModel(
     }
 
     fun showSupportPage() {
+        _showPrivacy.value = false
         _showSupport.value = true
     }
 
@@ -62,12 +67,33 @@ class MainViewModel(
         _showSupport.value = false
     }
 
+    fun showPrivacyPage() {
+        _showSupport.value = false
+        _showPrivacy.value = true
+    }
+
+    fun hidePrivacyPage() {
+        _showPrivacy.value = false
+    }
+
+    fun hideOverlayPages() {
+        _showSupport.value = false
+        _showPrivacy.value = false
+    }
+
     fun toggleSupport() {
+        _showPrivacy.value = false
         _showSupport.value = !_showSupport.value
+    }
+
+    fun togglePrivacy() {
+        _showSupport.value = false
+        _showPrivacy.value = !_showPrivacy.value
     }
 
     fun selectFeature(feature: Feature) {
         _showSupport.value = false
+        _showPrivacy.value = false
         _currentFeature.value = feature
     }
 }

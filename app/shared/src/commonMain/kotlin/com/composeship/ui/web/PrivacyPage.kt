@@ -1,77 +1,119 @@
 package com.composeship.ui.web
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import com.composeship.app.shared.generated.resources.Res as SharedRes
+import com.composeship.app.shared.generated.resources.privacy_contact_desc
+import com.composeship.app.shared.generated.resources.privacy_contact_title
+import com.composeship.app.shared.generated.resources.privacy_data_collection_desc
+import com.composeship.app.shared.generated.resources.privacy_data_collection_title
+import com.composeship.app.shared.generated.resources.privacy_local_storage_desc
+import com.composeship.app.shared.generated.resources.privacy_local_storage_title
+import com.composeship.app.shared.generated.resources.privacy_overview_desc
+import com.composeship.app.shared.generated.resources.privacy_overview_title
+import com.composeship.app.shared.generated.resources.privacy_third_party_desc
+import com.composeship.app.shared.generated.resources.privacy_third_party_title
+import com.composeship.app.shared.generated.resources.privacy_title
+import com.composeship.core.ui.TechnicalGridBackground
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun PrivacyPage(onBack: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            text = "Privacy Policy",
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.primary
-        )
-        
-        Card(modifier = Modifier.fillMaxWidth(0.9f)) {
-            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Overview", style = MaterialTheme.typography.titleMedium)
+fun PrivacyPage(modifier: Modifier = Modifier) {
+    Box(modifier = modifier.fillMaxSize()) {
+        TechnicalGridBackground()
+
+        Surface(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+            shape = MaterialTheme.shapes.extraLarge,
+            border = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) null
+            else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Text(
-                    "ComposeShip is committed to protecting your privacy. This policy explains how we handle your data.",
-                    style = MaterialTheme.typography.bodyMedium
+                    text = stringResource(SharedRes.string.privacy_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
-                
-                Text("Data Collection", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "• On Web and Android: We use Firebase Analytics to collect anonymous usage data to help us improve the app.\n" +
-                    "• On iOS and macOS: No analytics are collected.\n" +
-                    "• Personal Data: We do not collect or store any personal identification information on our servers.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                
-                Text("Local Storage", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "• We use local storage (Shared Preferences/Multiplatform Settings) to save your preferences and app state.\n" +
-                    "• On macOS, sensitive credentials (like App Store Connect API keys) are stored securely in the system Keychain.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                
-                Text("Third-Party Services", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "• Firebase (Google Inc.): Used for analytics on specific platforms.\n" +
-                    "• Apple services: The macOS Release tool interacts directly with Apple's servers for signing and notarization.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                
-                Text("Contact", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "If you have any questions, contact us at dmytro@turskyi.com",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+
+                SelectionContainer {
+                    Card(modifier = Modifier.fillMaxWidth(0.9f)) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = stringResource(SharedRes.string.privacy_overview_title),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = stringResource(SharedRes.string.privacy_overview_desc),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Text(
+                                text = stringResource(SharedRes.string.privacy_data_collection_title),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = stringResource(SharedRes.string.privacy_data_collection_desc),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Text(
+                                text = stringResource(SharedRes.string.privacy_local_storage_title),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = stringResource(SharedRes.string.privacy_local_storage_desc),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Text(
+                                text = stringResource(SharedRes.string.privacy_third_party_title),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = stringResource(SharedRes.string.privacy_third_party_desc),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Text(
+                                text = stringResource(SharedRes.string.privacy_contact_title),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = stringResource(SharedRes.string.privacy_contact_desc),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
             }
-        }
-        
-        Button(onClick = onBack) {
-            Text("Back to Home")
         }
     }
 }

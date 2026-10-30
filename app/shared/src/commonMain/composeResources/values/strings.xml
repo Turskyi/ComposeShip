@@ -32,4 +32,16 @@
     <string name="support_web_title">Web Support</string>
     <string name="support_telegram_title">Telegram Community</string>
     <string name="support_back_button">Back to Home</string>
+    <string name="privacy_title">Privacy Policy</string>
+    <string name="privacy_overview_title">Overview</string>
+    <string name="privacy_overview_desc">ComposeShip is committed to protecting your privacy. This policy explains how we handle your data.</string>
+    <string name="privacy_data_collection_title">Data Collection</string>
+    <string name="privacy_data_collection_desc">• On Web and Android: We use Firebase Analytics to collect anonymous usage data to help us improve the app.\n• On iOS and macOS: No analytics are collected.\n• Personal Data: We do not collect or store any personal identification information on our servers.</string>
+    <string name="privacy_local_storage_title">Local Storage</string>
+    <string name="privacy_local_storage_desc">• We use local storage (Shared Preferences/Multiplatform Settings) to save your preferences and app state.\n• On macOS, sensitive credentials (like App Store Connect API keys) are stored securely in the system Keychain.</string>
+    <string name="privacy_third_party_title">Third-Party Services</string>
+    <string name="privacy_third_party_desc">• Firebase (Google Inc.): Used for analytics on specific platforms.\n• Apple services: The macOS Release tool interacts directly with Apple's servers for signing and notarization.</string>
+    <string name="privacy_contact_title">Contact</string>
+    <string name="privacy_contact_desc">If you have any questions, contact us at dmytro@turskyi.com</string>
+    <string name="more_options_description">More options</string>
 </resources>
