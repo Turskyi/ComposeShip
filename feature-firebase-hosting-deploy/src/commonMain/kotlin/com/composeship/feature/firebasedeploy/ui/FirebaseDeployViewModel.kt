@@ -48,13 +48,16 @@ class FirebaseDeployViewModel(
         if (path.isEmpty()) return
 
         val firebaseJsonMatch = fileSystemService.exists("$path/firebase.json")
-        val gradleBuildMatch = fileSystemService.exists("$path/composeApp/build.gradle.kts")
+        val possibleWebModules = listOf("composeApp", "app/webApp", "webApp")
+        val validModuleFound = possibleWebModules.any { module ->
+            fileSystemService.exists("$path/$module/build.gradle.kts")
+        }
 
-        if (!firebaseJsonMatch || !gradleBuildMatch) {
+        if (!firebaseJsonMatch || !validModuleFound) {
             _state.update {
                 it.copy(
                     isProjectValid = false,
-                    projectValidationError = "Project must contain firebase.json and a ':composeApp' module"
+                    projectValidationError = "Project must contain firebase.json and a web module (e.g. ':composeApp' or ':app:webApp')"
                 )
             }
             return

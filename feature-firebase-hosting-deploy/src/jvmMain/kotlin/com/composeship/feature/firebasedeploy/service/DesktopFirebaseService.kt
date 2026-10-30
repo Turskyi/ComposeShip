@@ -14,7 +14,13 @@ class DesktopFirebaseService(
     override fun deploy(projectRoot: String): Flow<ProcessOutput> = flow {
         emit(ProcessOutput.Stdout("Building WASM distribution..."))
         
-        val buildCommand = listOf("./gradlew", ":composeApp:wasmJsBrowserDistribution")
+        val webModule = listOf("app/webApp", "composeApp", "webApp").firstOrNull { module ->
+            Files.exists(java.nio.file.Paths.get(projectRoot, *module.split("/").toTypedArray(), "build.gradle.kts"))
+        } ?: "composeApp"
+
+        val gradleProject = if (webModule.startsWith(":")) webModule else ":${webModule.replace('/', ':')}"
+        val gradleTask = "$gradleProject:wasmJsBrowserDistribution"
+        val buildCommand = listOf("./gradlew", gradleTask)
         
         var buildExitCode = -1
         processService.execute(buildCommand, directory = projectRoot).collect { output ->
