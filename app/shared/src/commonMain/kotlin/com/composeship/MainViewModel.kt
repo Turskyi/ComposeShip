@@ -16,7 +16,8 @@ import kotlinx.coroutines.launch
 class MainViewModel(
     private val themeRepository: ThemeRepository,
     private val settingsRepository: SettingsRepository,
-    private val appLocale: AppLocale
+    private val appLocale: AppLocale,
+    initialShowSupport: Boolean = false
 ) : ViewModel() {
     val themeMode: StateFlow<ThemeMode> = themeRepository.themeMode
     
@@ -28,7 +29,7 @@ class MainViewModel(
     private val _showOnboarding = MutableStateFlow(settingsRepository.shouldShowOnboarding())
     val showOnboarding: StateFlow<Boolean> = _showOnboarding.asStateFlow()
 
-    private val _showSupport = MutableStateFlow(false)
+    private val _showSupport = MutableStateFlow(initialShowSupport)
     val showSupport: StateFlow<Boolean> = _showSupport.asStateFlow()
 
     private val _currentFeature = MutableStateFlow(
