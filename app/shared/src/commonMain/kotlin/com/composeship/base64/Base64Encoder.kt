@@ -1,5 +1,10 @@
 package com.composeship.base64
 
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+
 private const val BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 const val MAX_BASE64_FILE_SIZE_BYTES = 50L * 1024L * 1024L
 
@@ -19,6 +24,26 @@ fun encodeBase64(bytes: ByteArray): String {
         output.append(if (hasThird) BASE64_ALPHABET[third and 0x3f] else '=')
     }
     return output.toString()
+}
+
+@OptIn(ExperimentalEncodingApi::class)
+fun decodeBase64(base64String: String): Result<String> {
+    return try {
+        val cleaned = base64String.replace("\\s".toRegex(), "")
+        val bytes = Base64.Default.decode(cleaned)
+        Result.success(bytes.decodeToString())
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
+
+fun formatJsonIfValid(input: String): String? {
+    return try {
+        val element = Json.parseToJsonElement(input.trim())
+        Json { prettyPrint = true }.encodeToString(JsonElement.serializer(), element)
+    } catch (e: Exception) {
+        null
+    }
 }
 
 fun localFileFromBytes(name: String, bytes: ByteArray): LocalFile {

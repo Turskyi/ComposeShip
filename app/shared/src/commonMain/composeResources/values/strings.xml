@@ -1,6 +1,15 @@
 <resources>
-    <string name="base64_title">File to Base64</string>
-    <string name="base64_privacy_note">Encode files locally on your device. File contents are never uploaded or sent to a server.</string>
+    <string name="base64_title">Base64</string>
+    <string name="base64_privacy_note">Encode and decode data locally on your device. Contents are never uploaded or sent to a server.</string>
+    <string name="base64_tab_decode">Decode</string>
+    <string name="base64_tab_encode">Encode</string>
+    <string name="base64_decode_input_label">Base64 input</string>
+    <string name="base64_decode_input_hint">Enter your Base64 encoded string here...</string>
+    <string name="base64_decode_button">Decode</string>
+    <string name="base64_decode_output">Decoded Text</string>
+    <string name="base64_decode_output_placeholder">The decoded result will appear here.</string>
+    <string name="base64_pretty_print">Pretty-print JSON</string>
+    <string name="base64_decode_error">Invalid Base64 string. Please check your input.</string>
     <string name="base64_choose_file">Choose a file</string>
     <string name="base64_select_file_hint">Select a local file to encode (up to 50 MB).</string>
     <string name="base64_encode">Encode file to Base64</string>

@@ -1,6 +1,15 @@
 <resources>
-    <string name="base64_title">Файл у Base64</string>
-    <string name="base64_privacy_note">Кодування файлів відбувається локально на вашому пристрої. Вміст файлів не завантажується і не надсилається на сервер.</string>
+    <string name="base64_title">Base64</string>
+    <string name="base64_privacy_note">Кодування та декодування даних локально на вашому пристрої. Вміст ніколи не завантажується і не надсилається на сервер.</string>
+    <string name="base64_tab_decode">Декодувати</string>
+    <string name="base64_tab_encode">Закодувати</string>
+    <string name="base64_decode_input_label">Вхідні дані Base64</string>
+    <string name="base64_decode_input_hint">Введіть рядок Base64 сюди...</string>
+    <string name="base64_decode_button">Декодувати</string>
+    <string name="base64_decode_output">Декодований текст</string>
+    <string name="base64_decode_output_placeholder">Тут з’явиться декодований результат.</string>
+    <string name="base64_pretty_print">Форматувати JSON</string>
+    <string name="base64_decode_error">Невірний рядок Base64. Перевірте вхідні дані.</string>
     <string name="base64_choose_file">Вибрати файл</string>
     <string name="base64_select_file_hint">Виберіть локальний файл для кодування (до 50 МБ).</string>
     <string name="base64_encode">Закодувати файл у Base64</string>
