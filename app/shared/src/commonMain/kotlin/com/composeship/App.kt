@@ -64,10 +64,10 @@ fun App(
 
     key(selectedLanguageCode) {
         MainScaffold(viewModel = mainViewModel, showOnboarding = showOnboarding) { modifier ->
-            if (showOnboarding) {
-                OnboardingScreen(onDismiss = { mainViewModel.dismissOnboarding() })
-            } else if (showSupport) {
+            if (showSupport) {
                 SupportPage(modifier)
+            } else if (showOnboarding) {
+                OnboardingScreen(onDismiss = { mainViewModel.dismissOnboarding() })
             } else {
                 AnimatedContent(
                     targetState = currentFeature,
