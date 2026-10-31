@@ -45,7 +45,8 @@ fun App(
             initialShowPrivacy = initialRoute.showPrivacy,
             initialShowLanding = initialRoute.showLanding,
             initialFeature = initialRoute.feature,
-            initialBase64Tab = initialRoute.base64Tab
+            initialBase64Tab = initialRoute.base64Tab,
+            bypassOnboarding = initialRoute.bypassOnboarding
         )
     }
     val showOnboarding by mainViewModel.showOnboarding.collectAsStateWithLifecycle()

@@ -17,7 +17,8 @@ class AppContainer {
         initialShowPrivacy: Boolean = false,
         initialShowLanding: Boolean = false,
         initialFeature: com.composeship.core.domain.model.Feature? = null,
-        initialBase64Tab: Int = 0
+        initialBase64Tab: Int = 0,
+        bypassOnboarding: Boolean = false
     ): MainViewModel {
         return MainViewModel(
             themeRepository = themeRepository,
@@ -27,7 +28,8 @@ class AppContainer {
             initialShowPrivacy = initialShowPrivacy,
             initialShowLanding = initialShowLanding,
             initialFeature = initialFeature,
-            initialBase64Tab = initialBase64Tab
+            initialBase64Tab = initialBase64Tab,
+            bypassOnboarding = bypassOnboarding
         )
     }
 }

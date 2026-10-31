@@ -21,7 +21,8 @@ class MainViewModel(
     initialShowPrivacy: Boolean = false,
     initialShowLanding: Boolean = false,
     initialFeature: Feature? = null,
-    initialBase64Tab: Int = 0
+    initialBase64Tab: Int = 0,
+    bypassOnboarding: Boolean = false
 ) : ViewModel() {
     val themeMode: StateFlow<ThemeMode> = themeRepository.themeMode
     
@@ -30,7 +31,14 @@ class MainViewModel(
     private val _selectedLanguageCode = MutableStateFlow(if (appLocale.hasUserSetLanguage()) appLocale.getLanguageCode() else null)
     val selectedLanguageCode: StateFlow<String?> = _selectedLanguageCode.asStateFlow()
 
-    private val _showOnboarding = MutableStateFlow(settingsRepository.shouldShowOnboarding())
+    private val _showOnboarding = MutableStateFlow(
+        if (bypassOnboarding) {
+            settingsRepository.setOnboardingShown()
+            false
+        } else {
+            settingsRepository.shouldShowOnboarding()
+        }
+    )
     val showOnboarding: StateFlow<Boolean> = _showOnboarding.asStateFlow()
 
     private val _showSupport = MutableStateFlow(initialShowSupport)

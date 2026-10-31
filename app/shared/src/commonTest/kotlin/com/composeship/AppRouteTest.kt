@@ -15,6 +15,7 @@ class AppRouteTest {
             val route = AppRoute.parse(path, isMac = false, isWeb = true)
             assertEquals(Feature.FILE_TO_BASE64, route.feature, "Expected FILE_TO_BASE64 for path: $path")
             assertEquals(0, route.base64Tab, "Expected tab 0 (Decode) for path: $path")
+            assertTrue(route.bypassOnboarding, "Expected onboarding to be bypassed for direct link: $path")
             assertFalse(route.showSupport)
             assertFalse(route.showPrivacy)
             assertFalse(route.showLanding)
@@ -28,6 +29,7 @@ class AppRouteTest {
             val route = AppRoute.parse(path, isMac = false, isWeb = true)
             assertEquals(Feature.FILE_TO_BASE64, route.feature, "Expected FILE_TO_BASE64 for path: $path")
             assertEquals(1, route.base64Tab, "Expected tab 1 (Encode) for path: $path")
+            assertTrue(route.bypassOnboarding, "Expected onboarding to be bypassed for direct link: $path")
             assertFalse(route.showSupport)
             assertFalse(route.showPrivacy)
             assertFalse(route.showLanding)
@@ -38,12 +40,15 @@ class AppRouteTest {
     fun testParseOtherFeatureRoutes() {
         val passwordRoute = AppRoute.parse("/password", isMac = false, isWeb = true)
         assertEquals(Feature.PASSWORD_GENERATOR, passwordRoute.feature)
+        assertFalse(passwordRoute.bypassOnboarding)
 
         val cloudRunRoute = AppRoute.parse("/cloudrun", isMac = false, isWeb = true)
         assertEquals(Feature.CLOUD_RUN_DEPLOY, cloudRunRoute.feature)
+        assertFalse(cloudRunRoute.bypassOnboarding)
 
         val firebaseRoute = AppRoute.parse("/firebase", isMac = false, isWeb = true)
         assertEquals(Feature.FIREBASE_HOSTING, firebaseRoute.feature)
+        assertFalse(firebaseRoute.bypassOnboarding)
     }
 
     @Test

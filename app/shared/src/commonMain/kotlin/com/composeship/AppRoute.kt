@@ -7,7 +7,8 @@ data class AppRoute(
     val base64Tab: Int = 0,
     val showSupport: Boolean = false,
     val showPrivacy: Boolean = false,
-    val showLanding: Boolean = false
+    val showLanding: Boolean = false,
+    val bypassOnboarding: Boolean = false
 ) {
     fun toPath(): String {
         return when {
@@ -33,8 +34,16 @@ data class AppRoute(
                 "support" -> AppRoute(feature = defaultFeature, showSupport = true)
                 "privacy", "privacypolicy" -> AppRoute(feature = defaultFeature, showPrivacy = true)
                 "landing" -> AppRoute(feature = defaultFeature, showLanding = isWeb)
-                "decodebase64", "base64totext", "base64/decode", "base64" -> AppRoute(feature = Feature.FILE_TO_BASE64, base64Tab = 0)
-                "filetobase64", "base64/encode" -> AppRoute(feature = Feature.FILE_TO_BASE64, base64Tab = 1)
+                "decodebase64", "base64totext", "base64/decode", "base64" -> AppRoute(
+                    feature = Feature.FILE_TO_BASE64,
+                    base64Tab = 0,
+                    bypassOnboarding = true
+                )
+                "filetobase64", "base64/encode" -> AppRoute(
+                    feature = Feature.FILE_TO_BASE64,
+                    base64Tab = 1,
+                    bypassOnboarding = true
+                )
                 "password", "passwordgenerator" -> AppRoute(feature = Feature.PASSWORD_GENERATOR)
                 "cloudrun", "cloudrundeploy" -> AppRoute(feature = Feature.CLOUD_RUN_DEPLOY)
                 "firebase", "firebasehosting" -> AppRoute(feature = Feature.FIREBASE_HOSTING)
