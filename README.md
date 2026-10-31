@@ -8,7 +8,8 @@
 
 # ComposeShip
 
-This is a Compose Multiplatform project targeting Android, iOS, Web, Desktop (JVM), Server. It is designed as a suite of developer utility tools.
+This is a Compose Multiplatform project targeting Android, iOS, Web, Desktop
+(JVM), Server. It is designed as a suite of developer utility tools.
 
 ### Testing the App:
 
@@ -17,13 +18,6 @@ Join our testing program and provide valuable feedback:
 - [Live Web App](https://composeship.web.app)
 - [Android App Tester Invite](https://appdistribution.firebase.dev/i/c32c55af9803d74d)
 - [iOS TestFlight Invite](https://testflight.apple.com/join/Bbw3q9Dx)
-
-## Screenshots
-
-<p align="center">
-  <img src="assets/screenshots/ComposeShip_Mac_Screenshot_4_Firebase_Hosting_2880x1800.png" alt="Firebase Hosting Deployer (Dark Theme)" width="49%" />
-  <img src="assets/screenshots/ComposeShip_Mac_Screenshot_uk_3_Firebase_Hosting_2880x1800.png" alt="Firebase Hosting Deployer (Light Theme)" width="49%" />
-</p>
 
 ## Project Structure
 
@@ -48,16 +42,20 @@ Join our testing program and provide valuable feedback:
   macOS desktop apps. It automates the process of packaging, signing,
   notarizing, and uploading Compose Multiplatform apps to App Store Connect.
 
-* [/feature-cloud-run-deploy](./feature-cloud-run-deploy) is a deployment utility
+* [/feature-cloud-run-deploy](./feature-cloud-run-deploy) is a deployment
+  utility
   for Google Cloud Run. It automates building Docker images via Cloud Build and
   deploying them to Cloud Run.
 
-* [/feature-firebase-hosting-deploy](./feature-firebase-hosting-deploy) is a deployment utility
-  for Firebase Hosting. It enables deploying WASM web applications directly to Firebase Hosting with streaming logs.
+* [/feature-firebase-hosting-deploy](./feature-firebase-hosting-deploy) is a
+  deployment utility
+  for Firebase Hosting. It enables deploying WASM web applications directly to
+  Firebase Hosting with streaming logs.
 
 ## Firebase Hosting Deployer
 
-The **Firebase Hosting Deployer** is a deployment tool designed to deploy WASM web applications directly to Firebase Hosting.
+The **Firebase Hosting Deployer** is a deployment tool designed to deploy WASM
+web applications directly to Firebase Hosting.
 
 ![Firebase Hosting Deployer](assets/screenshots/ComposeShip_Mac_Screenshot_4_Firebase_Hosting_2880x1800.png)
 
@@ -65,13 +63,15 @@ The **Firebase Hosting Deployer** is a deployment tool designed to deploy WASM w
 
 - **Flexible Source**: Deploy from a local project or GitHub repository.
 - **Automated Deploy**: Automates `firebase deploy` for WASM web apps.
-- **Real-Time Terminal Logs**: Streams deployment progress and live terminal output directly into the app UI.
+- **Real-Time Terminal Logs**: Streams deployment progress and live terminal
+  output directly into the app UI.
 
 ### How to use
 
 1. Run the application (Desktop or Web).
 2. Navigate to the **Firebase** tab in the navigation rail.
-3. Select **Local Project** or **GitHub Repo** and provide the root path or repository URL.
+3. Select **Local Project** or **GitHub Repo** and provide the root path or
+   repository URL.
 4. Click **Deploy to Firebase**.
 
 ## macOS Release Tool
