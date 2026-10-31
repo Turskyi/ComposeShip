@@ -19,7 +19,9 @@ class MainViewModel(
     private val appLocale: AppLocale,
     initialShowSupport: Boolean = false,
     initialShowPrivacy: Boolean = false,
-    initialShowLanding: Boolean = false
+    initialShowLanding: Boolean = false,
+    initialFeature: Feature? = null,
+    initialBase64Tab: Int = 0
 ) : ViewModel() {
     val themeMode: StateFlow<ThemeMode> = themeRepository.themeMode
     
@@ -41,9 +43,16 @@ class MainViewModel(
     val showLanding: StateFlow<Boolean> = _showLanding.asStateFlow()
 
     private val _currentFeature = MutableStateFlow(
-        if (getPlatform().isMac) Feature.MACOS_RELEASE else Feature.CLOUD_RUN_DEPLOY
+        initialFeature ?: if (getPlatform().isMac) Feature.MACOS_RELEASE else Feature.CLOUD_RUN_DEPLOY
     )
     val currentFeature: StateFlow<Feature> = _currentFeature.asStateFlow()
+
+    private val _base64Tab = MutableStateFlow(initialBase64Tab)
+    val base64Tab: StateFlow<Int> = _base64Tab.asStateFlow()
+
+    fun selectBase64Tab(tabIndex: Int) {
+        _base64Tab.value = tabIndex
+    }
 
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch {

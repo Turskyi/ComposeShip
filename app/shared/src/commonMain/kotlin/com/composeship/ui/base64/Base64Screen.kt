@@ -30,8 +30,14 @@ import com.composeship.core.ui.TechnicalGridBackground
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun Base64Screen(modifier: Modifier = Modifier) {
-    var selectedTab by remember { mutableStateOf(0) }
+fun Base64Screen(
+    modifier: Modifier = Modifier,
+    selectedTab: Int? = null,
+    onTabSelected: ((Int) -> Unit)? = null
+) {
+    var internalSelectedTab by remember { mutableStateOf(0) }
+    val activeTab = selectedTab ?: internalSelectedTab
+
     val tabs = listOf(
         stringResource(Res.string.base64_tab_decode),
         stringResource(Res.string.base64_tab_encode)
@@ -53,17 +59,20 @@ fun Base64Screen(modifier: Modifier = Modifier) {
                 Text(stringResource(Res.string.base64_title), style = MaterialTheme.typography.headlineMedium)
                 Text(stringResource(Res.string.base64_privacy_note), style = MaterialTheme.typography.bodyMedium)
 
-                ScrollableTabRow(selectedTabIndex = selectedTab) {
+                ScrollableTabRow(selectedTabIndex = activeTab) {
                     tabs.forEachIndexed { index, title ->
                         Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
+                            selected = activeTab == index,
+                            onClick = {
+                                internalSelectedTab = index
+                                onTabSelected?.invoke(index)
+                            },
                             text = { Text(title) }
                         )
                     }
                 }
 
-                when (selectedTab) {
+                when (activeTab) {
                     0 -> Base64DecodeSection()
                     1 -> Base64EncodeSection()
                 }

@@ -27,16 +27,26 @@ import com.composeship.ui.web.SupportPage
 @Composable
 fun App(
     appContainer: AppContainer,
-    featureContent: @Composable (Feature, Modifier) -> Unit
+    featureContent: @Composable (feature: Feature, viewModel: MainViewModel, modifier: Modifier) -> Unit
 ) {
     val platform = remember { getPlatform() }
-    val initialPath = remember { platform.initialPath?.trim('/')?.lowercase() }
-    val initialSupport = remember { initialPath == "support" }
-    val initialPrivacy = remember { initialPath == "privacy" || initialPath == "privacypolicy" }
-    val initialLanding = remember { platform.type == PlatformType.WEB && initialPath == "landing" }
+    val initialRoute = remember {
+        AppRoute.parse(
+            path = platform.initialPath,
+            isMac = platform.isMac,
+            isWeb = platform.type == PlatformType.WEB
+        )
+    }
     val appLocale = rememberAppLocale()
-    val mainViewModel = remember(appLocale, initialSupport, initialPrivacy, initialLanding) {
-        appContainer.createMainViewModel(appLocale, initialSupport, initialPrivacy, initialLanding)
+    val mainViewModel = remember(appLocale, initialRoute) {
+        appContainer.createMainViewModel(
+            appLocale = appLocale,
+            initialShowSupport = initialRoute.showSupport,
+            initialShowPrivacy = initialRoute.showPrivacy,
+            initialShowLanding = initialRoute.showLanding,
+            initialFeature = initialRoute.feature,
+            initialBase64Tab = initialRoute.base64Tab
+        )
     }
     val showOnboarding by mainViewModel.showOnboarding.collectAsStateWithLifecycle()
     val showSupport by mainViewModel.showSupport.collectAsStateWithLifecycle()
@@ -44,28 +54,36 @@ fun App(
     val showLanding by mainViewModel.showLanding.collectAsStateWithLifecycle()
     val selectedLanguageCode by mainViewModel.selectedLanguageCode.collectAsStateWithLifecycle()
     val currentFeature by mainViewModel.currentFeature.collectAsStateWithLifecycle()
+    val base64Tab by mainViewModel.base64Tab.collectAsStateWithLifecycle()
 
-    LaunchedEffect(showSupport, showPrivacy, showLanding) {
+    LaunchedEffect(showSupport, showPrivacy, showLanding, currentFeature, base64Tab) {
         if (platform.type == PlatformType.WEB) {
-            val targetPath = when {
-                showSupport -> "/support"
-                showPrivacy -> "/privacy"
-                showLanding -> "/landing"
-                else -> "/"
-            }
-            platform.updateUrl(targetPath)
+            val route = AppRoute(
+                feature = currentFeature,
+                base64Tab = base64Tab,
+                showSupport = showSupport,
+                showPrivacy = showPrivacy,
+                showLanding = showLanding
+            )
+            platform.updateUrl(route.toPath())
         }
     }
 
     DisposableEffect(platform) {
         if (platform.type == PlatformType.WEB) {
             platform.observePathChanges { path ->
-                val trimmed = path.trim('/').lowercase()
-                when (trimmed) {
-                    "support" -> mainViewModel.showSupportPage()
-                    "privacy", "privacypolicy" -> mainViewModel.showPrivacyPage()
-                    "landing" -> mainViewModel.showLandingPage()
-                    else -> mainViewModel.hideLandingPage()
+                val route = AppRoute.parse(path, platform.isMac, platform.type == PlatformType.WEB)
+                when {
+                    route.showSupport -> mainViewModel.showSupportPage()
+                    route.showPrivacy -> mainViewModel.showPrivacyPage()
+                    route.showLanding -> mainViewModel.showLandingPage()
+                    else -> {
+                        mainViewModel.hideOverlayPages()
+                        mainViewModel.selectFeature(route.feature)
+                        if (route.feature == Feature.FILE_TO_BASE64) {
+                            mainViewModel.selectBase64Tab(route.base64Tab)
+                        }
+                    }
                 }
             }
         }
@@ -92,9 +110,19 @@ fun App(
                     },
                     label = "featureTransition"
                 ) { feature ->
-                    featureContent(feature, modifier)
+                    featureContent(feature, mainViewModel, modifier)
                 }
             }
         }
+    }
+}
+
+@Composable
+fun App(
+    appContainer: AppContainer,
+    featureContent: @Composable (feature: Feature, modifier: Modifier) -> Unit
+) {
+    App(appContainer = appContainer) { feature, _, modifier ->
+        featureContent(feature, modifier)
     }
 }

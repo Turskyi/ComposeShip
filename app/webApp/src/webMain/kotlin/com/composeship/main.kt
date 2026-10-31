@@ -36,7 +36,7 @@ fun main() {
     val firebaseViewModel = firebaseDeployContainer.createViewModel()
 
     ComposeViewport("ComposeShip") {
-            App(appContainer = appContainer) { feature, modifier ->
+        App(appContainer = appContainer) { feature, mainViewModel, modifier ->
             when (feature) {
                 Feature.CLOUD_RUN_DEPLOY -> CloudRunDeployScreen(
                     cloudRunViewModel,
@@ -54,7 +54,7 @@ fun main() {
                 )
 
                 Feature.PASSWORD_GENERATOR -> PasswordGeneratorScreen(modifier)
-                Feature.FILE_TO_BASE64 -> Base64EncoderScreen(modifier)
+                Feature.FILE_TO_BASE64 -> Base64EncoderScreen(mainViewModel, modifier)
 
                 else -> Text(
                     stringResource(Res.string.not_supported_on_web),

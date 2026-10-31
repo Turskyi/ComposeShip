@@ -15,7 +15,9 @@ class AppContainer {
         appLocale: AppLocale,
         initialShowSupport: Boolean = false,
         initialShowPrivacy: Boolean = false,
-        initialShowLanding: Boolean = false
+        initialShowLanding: Boolean = false,
+        initialFeature: com.composeship.core.domain.model.Feature? = null,
+        initialBase64Tab: Int = 0
     ): MainViewModel {
         return MainViewModel(
             themeRepository = themeRepository,
@@ -23,7 +25,9 @@ class AppContainer {
             appLocale = appLocale,
             initialShowSupport = initialShowSupport,
             initialShowPrivacy = initialShowPrivacy,
-            initialShowLanding = initialShowLanding
+            initialShowLanding = initialShowLanding,
+            initialFeature = initialFeature,
+            initialBase64Tab = initialBase64Tab
         )
     }
 }
